@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 import EulerMascot from '@/components/mascot/EulerMascot';
 
@@ -16,7 +16,6 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,34 +23,26 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username, displayName: displayName || username }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to sign up');
+
+      const result = await signIn('credentials', {
         email,
         password,
-        options: {
-          data: { username, display_name: displayName || username },
-        },
+        redirect: false,
       });
-      if (authError) throw authError;
 
-      if (authData.user) {
-        // Create user profile
-        const { error: profileError } = await supabase.from('users').insert({
-          id: authData.user.id,
-          email,
-          username,
-          display_name: displayName || username,
-        });
-        if (profileError) throw profileError;
-
-        // Initialize hearts, streaks, gems
-        await Promise.all([
-          supabase.from('hearts').insert({ user_id: authData.user.id }),
-          supabase.from('streaks').insert({ user_id: authData.user.id }),
-          supabase.from('gems').insert({ user_id: authData.user.id, balance: 100 }),
-        ]);
-
-        router.push('/onboarding');
+      if (result?.error) {
+        throw new Error('Account created but failed to sign in. Please log in manually.');
       }
+
+      router.push('/onboarding');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
@@ -60,10 +51,7 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-    });
+    await signIn('google', { callbackUrl: '/onboarding' });
   };
 
   return (
@@ -75,7 +63,7 @@ export default function SignupPage() {
       >
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <span className="text-4xl font-heading font-bold text-gradient">∞</span>
+            <span className="text-4xl font-heading font-bold text-gradient">&infin;</span>
             <span className="text-2xl font-heading font-bold text-gradient">Mathly</span>
           </Link>
           <EulerMascot state="excited" size="sm" message="Let's get started!" />

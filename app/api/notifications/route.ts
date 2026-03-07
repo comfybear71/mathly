@@ -1,24 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth/config';
+import { sql } from '@vercel/postgres';
 
 export async function GET() {
   try {
-    
-    const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const { rows } = await sql`
+      SELECT * FROM notifications WHERE user_id = ${session.user.id}
+      ORDER BY created_at DESC LIMIT 50
+    `;
 
-    return NextResponse.json({ notifications: data || [] });
+    return NextResponse.json({ notifications: rows });
   } catch (error) {
     console.error('Notifications API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -27,28 +23,17 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    
-    const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { action, notificationId } = await request.json();
 
     if (action === 'read_all') {
-      await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user.id)
-        .eq('read', false);
+      await sql`UPDATE notifications SET read = true WHERE user_id = ${session.user.id} AND read = false`;
     } else if (action === 'read' && notificationId) {
-      await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+      await sql`UPDATE notifications SET read = true WHERE id = ${notificationId} AND user_id = ${session.user.id}`;
     }
 
     return NextResponse.json({ success: true });

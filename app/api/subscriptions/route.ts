@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth/config';
 import Stripe from 'stripe';
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth();
+    if (!session?.user?.id || !session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,21 +16,20 @@ export async function POST(request: Request) {
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2026-02-25.clover' as Stripe.LatestApiVersion,
+      apiVersion: '2025-12-18.acacia' as Stripe.LatestApiVersion,
     });
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
-      metadata: { userId: user.id },
-      customer_email: user.email,
+      metadata: { userId: session.user.id },
+      customer_email: session.user.email,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {
     console.error('Subscription API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

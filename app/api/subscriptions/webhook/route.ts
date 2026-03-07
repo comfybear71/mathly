@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import { sql } from '@vercel/postgres';
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2026-02-25.clover' as Stripe.LatestApiVersion,
+    apiVersion: '2025-12-18.acacia' as Stripe.LatestApiVersion,
   });
-}
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
 }
 
 export async function POST(request: Request) {
@@ -25,7 +17,6 @@ export async function POST(request: Request) {
   }
 
   const stripe = getStripe();
-  const supabase = getSupabaseAdmin();
 
   let event: Stripe.Event;
   try {
@@ -54,15 +45,8 @@ export async function POST(request: Request) {
           ? new Date(sub.current_period_end * 1000).toISOString()
           : new Date(Date.now() + 30 * 86400000).toISOString();
 
-        await supabase
-          .from('users')
-          .update({ subscription_tier: tier, subscription_expires_at: expiresAt })
-          .eq('id', userId);
-
-        await supabase
-          .from('hearts')
-          .update({ unlimited_until: expiresAt })
-          .eq('user_id', userId);
+        await sql`UPDATE users SET subscription_tier = ${tier}, subscription_expires_at = ${expiresAt} WHERE id = ${userId}`;
+        await sql`UPDATE hearts SET unlimited_until = ${expiresAt} WHERE user_id = ${userId}`;
       }
       break;
     }
@@ -72,15 +56,8 @@ export async function POST(request: Request) {
       const userId = sub.metadata?.userId;
 
       if (userId) {
-        await supabase
-          .from('users')
-          .update({ subscription_tier: 'free', subscription_expires_at: null })
-          .eq('id', userId);
-
-        await supabase
-          .from('hearts')
-          .update({ unlimited_until: null })
-          .eq('user_id', userId);
+        await sql`UPDATE users SET subscription_tier = 'free', subscription_expires_at = NULL WHERE id = ${userId}`;
+        await sql`UPDATE hearts SET unlimited_until = NULL WHERE user_id = ${userId}`;
       }
       break;
     }

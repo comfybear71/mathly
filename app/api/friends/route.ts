@@ -1,36 +1,40 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth/config';
+import { sql } from '@vercel/postgres';
 
 export async function GET(request: Request) {
   try {
-    
-    const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'friends';
 
     if (type === 'pending') {
-      const { data } = await supabase
-        .from('friendships')
-        .select('*, requester:users!requester_id(id, username, display_name, avatar_url)')
-        .eq('addressee_id', user.id)
-        .eq('status', 'pending');
-
-      return NextResponse.json({ requests: data || [] });
+      const { rows } = await sql`
+        SELECT f.*,
+          json_build_object('id', req.id, 'username', req.username, 'display_name', req.display_name, 'avatar_url', req.avatar_url) as requester
+        FROM friendships f
+        JOIN users req ON req.id = f.requester_id
+        WHERE f.addressee_id = ${userId} AND f.status = 'pending'
+      `;
+      return NextResponse.json({ requests: rows });
     }
 
-    const { data } = await supabase
-      .from('friendships')
-      .select('*, requester:users!requester_id(id, username, display_name, avatar_url, total_xp, streak_count), addressee:users!addressee_id(id, username, display_name, avatar_url, total_xp, streak_count)')
-      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
-      .eq('status', 'accepted');
+    const { rows } = await sql`
+      SELECT f.*,
+        json_build_object('id', req.id, 'username', req.username, 'display_name', req.display_name, 'avatar_url', req.avatar_url, 'total_xp', req.total_xp, 'streak_count', req.streak_count) as requester,
+        json_build_object('id', addr.id, 'username', addr.username, 'display_name', addr.display_name, 'avatar_url', addr.avatar_url, 'total_xp', addr.total_xp, 'streak_count', addr.streak_count) as addressee
+      FROM friendships f
+      JOIN users req ON req.id = f.requester_id
+      JOIN users addr ON addr.id = f.addressee_id
+      WHERE (f.requester_id = ${userId} OR f.addressee_id = ${userId}) AND f.status = 'accepted'
+    `;
 
-    return NextResponse.json({ friends: data || [] });
+    return NextResponse.json({ friends: rows });
   } catch (error) {
     console.error('Friends API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -39,45 +43,27 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    
-    const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.id;
     const { action, friendshipId, username } = await request.json();
 
     if (action === 'send') {
-      const { data: targetUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('username', username)
-        .single();
-
-      if (!targetUser) {
+      const { rows: targetRows } = await sql`SELECT id FROM users WHERE username = ${username}`;
+      if (!targetRows[0]) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
-      const { error } = await supabase.from('friendships').insert({
-        requester_id: user.id,
-        addressee_id: targetUser.id,
-        status: 'pending',
-      });
-
-      if (error) throw error;
+      await sql`INSERT INTO friendships (requester_id, addressee_id, status) VALUES (${userId}, ${targetRows[0].id}, 'pending')`;
       return NextResponse.json({ success: true });
     }
 
     if (action === 'accept' || action === 'decline') {
       const status = action === 'accept' ? 'accepted' : 'blocked';
-      await supabase
-        .from('friendships')
-        .update({ status })
-        .eq('id', friendshipId)
-        .eq('addressee_id', user.id);
-
+      await sql`UPDATE friendships SET status = ${status} WHERE id = ${friendshipId} AND addressee_id = ${userId}`;
       return NextResponse.json({ success: true });
     }
 

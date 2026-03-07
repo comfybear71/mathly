@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 import EulerMascot from '@/components/mascot/EulerMascot';
 
@@ -14,7 +14,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,21 +21,26 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) throw authError;
-      router.push('/home');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to log in');
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError('Invalid email or password');
+      } else {
+        router.push('/home');
+      }
+    } catch {
+      setError('Failed to log in');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-    });
+    await signIn('google', { callbackUrl: '/home' });
   };
 
   return (
@@ -48,7 +52,7 @@ export default function LoginPage() {
       >
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <span className="text-4xl font-heading font-bold text-gradient">∞</span>
+            <span className="text-4xl font-heading font-bold text-gradient">&infin;</span>
             <span className="text-2xl font-heading font-bold text-gradient">Mathly</span>
           </Link>
           <EulerMascot state="happy" size="md" message="Welcome back!" />

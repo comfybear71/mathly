@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { sql } from '@vercel/postgres';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
@@ -7,33 +9,15 @@ export async function GET(request: Request) {
     const lessonId = searchParams.get('id');
     const unitId = searchParams.get('unit_id');
 
-    
-    const supabase = createServerClient();
-
     if (lessonId) {
-      const { data: lesson } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('id', lessonId)
-        .single();
-
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('lesson_id', lessonId)
-        .order('order_index');
-
-      return NextResponse.json({ lesson, questions: questions || [] });
+      const { rows: lessons } = await sql`SELECT * FROM lessons WHERE id = ${lessonId}`;
+      const { rows: questions } = await sql`SELECT * FROM questions WHERE lesson_id = ${lessonId} ORDER BY order_index`;
+      return NextResponse.json({ lesson: lessons[0] || null, questions });
     }
 
     if (unitId) {
-      const { data: lessons } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('unit_id', unitId)
-        .order('order_index');
-
-      return NextResponse.json({ lessons: lessons || [] });
+      const { rows: lessons } = await sql`SELECT * FROM lessons WHERE unit_id = ${unitId} ORDER BY order_index`;
+      return NextResponse.json({ lessons });
     }
 
     return NextResponse.json({ error: 'Provide id or unit_id' }, { status: 400 });
