@@ -22,10 +22,10 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || 'Failed to start checkout');
+        alert(data.error || 'Failed to start checkout. Check your Stripe configuration.');
       }
-    } catch {
-      alert('Something went wrong. Please try again.');
+    } catch (err) {
+      alert('Network error: ' + (err instanceof Error ? err.message : 'Please try again.'));
     } finally {
       setLoading(null);
     }

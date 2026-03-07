@@ -38,8 +38,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ url: checkoutSession.url });
-  } catch (error) {
-    console.error('Subscription API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Subscription API error:', message, error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
