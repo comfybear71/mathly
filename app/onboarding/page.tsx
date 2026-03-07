@@ -26,15 +26,6 @@ const steps = [
       { id: '30', label: '30 min / day', icon: '🏔️', xp: 200 },
     ],
   },
-  {
-    title: "What's your current level?",
-    options: [
-      { id: 'beginner', label: "I'm just starting", icon: '🔢', path: 1 },
-      { id: 'intermediate', label: 'I know some algebra', icon: '📐', path: 3 },
-      { id: 'advanced', label: 'I know calculus', icon: '🧮', path: 8 },
-      { id: 'expert', label: "I've studied higher math", icon: '🏛️', path: 13 },
-    ],
-  },
 ];
 
 export default function OnboardingPage() {
@@ -52,7 +43,7 @@ export default function OnboardingPage() {
       setCurrentStep(currentStep + 1);
     } else {
       setShowWelcome(true);
-      setTimeout(() => router.push('/home'), 3000);
+      setTimeout(() => router.push('/placement-test'), 3000);
     }
   };
 
@@ -65,12 +56,12 @@ export default function OnboardingPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <EulerMascot state="celebrating" size="xl" message="You're all set! Let's go!" />
+          <EulerMascot state="celebrating" size="xl" message="Almost there!" />
           <h1 className="text-4xl font-extrabold mt-8 mb-4">
             Welcome to <span className="text-gradient">Mathly</span>!
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300">
-            Your math journey begins now...
+            Let&apos;s find out your math level with a quick test...
           </p>
         </motion.div>
       </div>
@@ -136,7 +127,7 @@ export default function OnboardingPage() {
                 onClick={handleNext}
                 disabled={!selections[currentStep]}
               >
-                {currentStep === steps.length - 1 ? "Let's Go!" : 'Continue'}
+                {currentStep === steps.length - 1 ? 'Take Placement Test' : 'Continue'}
               </Button>
             </div>
           </motion.div>
