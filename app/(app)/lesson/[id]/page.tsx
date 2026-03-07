@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
+import { playCorrectSound, playWrongSound, playCompleteSound } from '@/lib/sounds';
 import Button from '@/components/ui/Button';
 import ProgressBar from '@/components/ui/ProgressBar';
 import HeartsDisplay from '@/components/ui/HeartsDisplay';
@@ -68,7 +69,7 @@ type AnswerState = 'idle' | 'correct' | 'wrong';
 
 export default function LessonPage() {
   const router = useRouter();
-  const { hearts, loseHeart, addXP } = useStore();
+  const { hearts, loseHeart, addXP, soundEnabled } = useStore();
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
@@ -99,9 +100,11 @@ export default function LessonPage() {
       setXpAmount(question.xp_value);
       setShowXPPopup(true);
       addXP(question.xp_value);
+      if (soundEnabled) playCorrectSound();
     } else {
       setAnswerState('wrong');
       loseHeart();
+      if (soundEnabled) playWrongSound();
     }
     setShowExplanation(true);
   }, [question, fillAnswer, selectedAnswer, addXP, loseHeart]);
@@ -117,6 +120,7 @@ export default function LessonPage() {
     } else {
       setShowComplete(true);
       setShowConfetti(true);
+      if (soundEnabled) playCompleteSound();
     }
   };
 

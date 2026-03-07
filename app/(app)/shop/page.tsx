@@ -64,7 +64,9 @@ export default function ShopPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-success/10 text-success rounded-xl px-4 py-3 text-center font-bold"
+          className={`rounded-xl px-4 py-3 text-center font-bold ${
+            purchaseMessage.includes('Not enough') ? 'bg-error/10 text-error' : 'bg-success/10 text-success'
+          }`}
         >
           {purchaseMessage}
         </motion.div>

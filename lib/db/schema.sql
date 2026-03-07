@@ -231,6 +231,20 @@ CREATE TABLE IF NOT EXISTS gems (
   balance INTEGER DEFAULT 0
 );
 
+-- Referrals
+CREATE TABLE IF NOT EXISTS referrals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  referrer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  referred_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending', -- pending, completed (referred user finished placement test)
+  gems_rewarded BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(referred_id)
+);
+
+-- Add referral_code to users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_user_progress_user ON user_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_progress_lesson ON user_progress(lesson_id);
@@ -239,3 +253,5 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read
 CREATE INDEX IF NOT EXISTS idx_lessons_unit ON lessons(unit_id);
 CREATE INDEX IF NOT EXISTS idx_questions_lesson ON questions(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_units_path ON units(path_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);

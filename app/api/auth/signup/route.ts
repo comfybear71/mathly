@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
-import { getUserByEmail, getUserByUsername, createUser, initializeUserRecords } from '@/lib/db/database';
+import { getUserByEmail, getUserByUsername, createUser, initializeUserRecords, getUserByReferralCode, createReferral } from '@/lib/db/database';
 
 export async function POST(request: Request) {
   try {
-    const { email, password, username, displayName } = await request.json();
+    const { email, password, username, displayName, referralCode } = await request.json();
 
     if (!email || !password || !username) {
       return NextResponse.json({ error: 'Email, password, and username are required' }, { status: 400 });
@@ -30,6 +30,18 @@ export async function POST(request: Request) {
     });
 
     await initializeUserRecords(user.id);
+
+    // Apply referral code if provided
+    if (referralCode) {
+      try {
+        const referrer = await getUserByReferralCode(referralCode.toUpperCase());
+        if (referrer && referrer.id !== user.id) {
+          await createReferral(referrer.id, user.id);
+        }
+      } catch (e) {
+        console.error('Referral error (non-blocking):', e);
+      }
+    }
 
     return NextResponse.json({ user: { id: user.id, email: user.email, username: user.username } });
   } catch (error) {

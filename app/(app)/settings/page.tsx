@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import Button from '@/components/ui/Button';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { darkMode, toggleDarkMode, soundEnabled, toggleSound, user } = useStore();
   const [dailyGoal, setDailyGoal] = useState(user?.daily_goal_xp || 50);
   const [reminderTime, setReminderTime] = useState('20:00');
@@ -117,8 +120,19 @@ export default function SettingsPage() {
             <p className="font-bold capitalize">{user?.subscription_tier || 'Free'} Plan</p>
             <p className="text-sm text-gray-500">Manage your subscription</p>
           </div>
-          <Button variant="outline" size="sm">Manage</Button>
+          <Button variant="outline" size="sm" onClick={() => router.push('/shop')}>Manage</Button>
         </div>
+      </div>
+
+      {/* Sign Out */}
+      <div className="card">
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => signOut({ callbackUrl: '/login' })}
+        >
+          Sign Out
+        </Button>
       </div>
 
       {/* Danger Zone */}

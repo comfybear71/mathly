@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get('ref') || '';
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username, displayName: displayName || username }),
+        body: JSON.stringify({ email, password, username, displayName: displayName || username, referralCode: refCode }),
       });
 
       const data = await res.json();
@@ -51,6 +53,9 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
+    if (refCode) {
+      localStorage.setItem('mathly_referral', refCode);
+    }
     await signIn('google', { callbackUrl: '/onboarding' });
   };
 
@@ -66,7 +71,7 @@ export default function SignupPage() {
             <span className="text-4xl font-heading font-bold text-gradient">&infin;</span>
             <span className="text-2xl font-heading font-bold text-gradient">Mathly</span>
           </Link>
-          <EulerMascot state="excited" size="sm" message="Let's get started!" />
+          <EulerMascot state="excited" size="sm" message={refCode ? "Your friend invited you!" : "Let's get started!"} />
         </div>
 
         <div className="card">

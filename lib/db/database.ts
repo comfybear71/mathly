@@ -346,3 +346,59 @@ export async function initializeUserRecords(userId: string): Promise<void> {
 export async function incrementUserXP(userId: string, xpAmount: number): Promise<void> {
   await sql`UPDATE users SET total_xp = total_xp + ${xpAmount} WHERE id = ${userId}`;
 }
+
+// Referral functions
+export async function getUserReferralCode(userId: string): Promise<string> {
+  const { rows } = await sql`SELECT referral_code FROM users WHERE id = ${userId}`;
+  if (rows[0]?.referral_code) return rows[0].referral_code;
+
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  await sql`UPDATE users SET referral_code = ${code} WHERE id = ${userId}`;
+  return code;
+}
+
+export async function getUserByReferralCode(code: string): Promise<User | null> {
+  const { rows } = await sql`SELECT * FROM users WHERE referral_code = ${code}`;
+  return rows[0] as User || null;
+}
+
+export async function createReferral(referrerId: string, referredId: string) {
+  const { rows } = await sql`
+    INSERT INTO referrals (referrer_id, referred_id, status)
+    VALUES (${referrerId}, ${referredId}, 'pending')
+    ON CONFLICT (referred_id) DO NOTHING
+    RETURNING *
+  `;
+  return rows[0] || null;
+}
+
+export async function getReferralStats(userId: string) {
+  const { rows: total } = await sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ${userId}`;
+  const { rows: completed } = await sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ${userId} AND status = 'completed'`;
+  const { rows: referrals } = await sql`
+    SELECT r.*, json_build_object('id', u.id, 'username', u.username, 'display_name', u.display_name, 'avatar_url', u.avatar_url) as referred_user
+    FROM referrals r
+    JOIN users u ON u.id = r.referred_id
+    WHERE r.referrer_id = ${userId}
+    ORDER BY r.created_at DESC
+    LIMIT 20
+  `;
+  return {
+    total_referrals: parseInt(total[0].count),
+    completed_referrals: parseInt(completed[0].count),
+    gems_earned: parseInt(completed[0].count) * 100,
+    referrals,
+  };
+}
+
+export async function completeReferral(referredId: string) {
+  const { rows } = await sql`
+    UPDATE referrals SET status = 'completed' WHERE referred_id = ${referredId} AND status = 'pending' RETURNING *
+  `;
+  if (rows[0] && !rows[0].gems_rewarded) {
+    await sql`UPDATE gems SET balance = balance + 100 WHERE user_id = ${rows[0].referrer_id}`;
+    await sql`UPDATE gems SET balance = balance + 50 WHERE user_id = ${referredId}`;
+    await sql`UPDATE referrals SET gems_rewarded = true WHERE id = ${rows[0].id}`;
+  }
+  return rows[0] || null;
+}
