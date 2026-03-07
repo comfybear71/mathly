@@ -120,7 +120,7 @@ export default function SettingsPage() {
             <p className="font-bold capitalize">{user?.subscription_tier || 'Free'} Plan</p>
             <p className="text-sm text-gray-500">Manage your subscription</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => router.push('/shop')}>Manage</Button>
+          <Button variant="outline" size="sm" onClick={() => router.push('/pricing')}>Manage</Button>
         </div>
       </div>
 

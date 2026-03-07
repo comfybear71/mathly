@@ -4,8 +4,32 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
 
+type PlanKey = 'plus_monthly' | 'plus_annual' | 'family_monthly' | 'family_annual';
+
 export default function PricingPage() {
   const [annual, setAnnual] = useState(true);
+  const [loading, setLoading] = useState<PlanKey | null>(null);
+
+  const handleSubscribe = async (planKey: PlanKey) => {
+    setLoading(planKey);
+    try {
+      const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planKey }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to start checkout');
+      }
+    } catch {
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
@@ -45,7 +69,7 @@ export default function PricingPage() {
               </li>
             ))}
           </ul>
-          <Button variant="outline" className="w-full">Current Plan</Button>
+          <Button variant="outline" className="w-full" disabled>Current Plan</Button>
         </motion.div>
 
         {/* Plus */}
@@ -65,7 +89,14 @@ export default function PricingPage() {
               </li>
             ))}
           </ul>
-          <Button variant="primary" className="w-full">Upgrade to Plus</Button>
+          <Button
+            variant="primary"
+            className="w-full"
+            loading={loading === (annual ? 'plus_annual' : 'plus_monthly')}
+            onClick={() => handleSubscribe(annual ? 'plus_annual' : 'plus_monthly')}
+          >
+            Upgrade to Plus
+          </Button>
         </motion.div>
 
         {/* Family */}
@@ -82,7 +113,14 @@ export default function PricingPage() {
               </li>
             ))}
           </ul>
-          <Button variant="secondary" className="w-full">Start Family Plan</Button>
+          <Button
+            variant="secondary"
+            className="w-full"
+            loading={loading === (annual ? 'family_annual' : 'family_monthly')}
+            onClick={() => handleSubscribe(annual ? 'family_annual' : 'family_monthly')}
+          >
+            Start Family Plan
+          </Button>
         </motion.div>
       </div>
     </div>

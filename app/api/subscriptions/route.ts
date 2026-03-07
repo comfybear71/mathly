@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import Stripe from 'stripe';
+import { getStripeClient, PLANS } from '@/lib/stripe/client';
 
 export async function POST(request: Request) {
   try {
@@ -9,20 +9,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { priceId } = await request.json();
+    const { planKey, priceId: directPriceId } = await request.json();
 
     if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Stripe not configured. Please add your Stripe keys in Vercel.' }, { status: 500 });
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-12-18.acacia' as Stripe.LatestApiVersion,
-    });
+    // Resolve price ID from plan key or direct price ID
+    let resolvedPriceId = directPriceId;
+    if (planKey && planKey in PLANS) {
+      resolvedPriceId = PLANS[planKey as keyof typeof PLANS].priceId;
+    }
+
+    if (!resolvedPriceId) {
+      return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
+    }
+
+    const stripe = getStripeClient();
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: resolvedPriceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
       metadata: { userId: session.user.id },
