@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import EulerMascot from '@/components/mascot/EulerMascot';
+// Mathly v1.0
 import Button from '@/components/ui/Button';
 
 const features = [
