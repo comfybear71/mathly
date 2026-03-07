@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #1A1A2E;
+}
+
+.dark {
+  --foreground: #FAFAFA;
+}
+
+@layer base {
+  body {
+    @apply bg-background-light text-[var(--foreground)];
+  }
+  .dark body {
+    @apply bg-background-dark;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white font-bold py-3 px-6 rounded-xl
+           hover:bg-primary-500 active:scale-95 transition-all duration-200
+           shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-white font-bold py-3 px-6 rounded-xl
+           hover:bg-secondary-500 active:scale-95 transition-all duration-200
+           shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-outline {
+    @apply border-2 border-primary text-primary font-bold py-3 px-6 rounded-xl
+           hover:bg-primary hover:text-white active:scale-95 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 transition-all duration-200;
+  }
+  .card-hover {
+    @apply card hover:shadow-xl hover:-translate-y-1 cursor-pointer;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600
+           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+           focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
+           transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+@keyframes correct-answer {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wrong-answer {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.animate-correct {
+  animation: correct-answer 0.5s ease-in-out;
+}
+
+.animate-wrong {
+  animation: wrong-answer 0.5s ease-in-out;
+}
