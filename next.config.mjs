@@ -1,14 +1,5 @@
-import withPWAInit from "next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-  skipWaiting: true,
-});
-
 /** @type {import('next').NextConfig} */
-const nextConfig = withPWA({
+const nextConfig = {
   images: {
     remotePatterns: [
       {
@@ -17,6 +8,22 @@ const nextConfig = withPWA({
       },
     ],
   },
-});
+};
 
-export default nextConfig;
+// Only wrap with PWA in production and when the module is available
+let finalConfig = nextConfig;
+
+try {
+  const withPWAInit = (await import("next-pwa")).default;
+  const withPWA = withPWAInit({
+    dest: "public",
+    disable: process.env.NODE_ENV === "development",
+    register: true,
+    skipWaiting: true,
+  });
+  finalConfig = withPWA(nextConfig);
+} catch {
+  // next-pwa not available, continue without it
+}
+
+export default finalConfig;
