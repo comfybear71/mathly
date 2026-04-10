@@ -1,3 +1,39 @@
+# SAFETY PROTOCOL — READ BEFORE DOING ANYTHING
+
+> **MANDATORY.** Read this before any work on this repo.
+> These rules apply to every Claude session, every commit, every PR.
+> Full protocols in MasterHQ:
+> - https://github.com/comfybear71/Master/blob/master/docs/code-preservation-protocol.md
+> - https://github.com/comfybear71/Master/blob/master/SAFETY-RULES.md
+
+## Branch & Merge Rules
+- **NEVER push directly to master/main** — always work on a feature branch
+- **NEVER do blanket reverts** — fix surgically, one commit at a time
+- **NEVER delete CLAUDE.md or HANDOFF.md** — these are sacred files
+- **Squash-merge only** — linear history is enforced on master
+- Branch protection: **ACTIVE** via ruleset "Protect Master" (0 approvals, dismiss stale, linear history, no force pushes, no deletions)
+
+## Session Workflow
+1. Create new `claude/<feature-name>` branch from master
+2. Work, commit atomically (small, focused commits)
+3. Open PR → `claude/*` → `master`
+4. Squash-merge → delete branch
+5. Tag stable releases via GitHub Releases page when milestones ship
+
+## Fix Spiral Prevention
+- If something breaks, STOP and diagnose before fixing
+- If 3+ failed fix attempts, STOP and ask the user
+- Never batch 10+ file deletions in one commit
+
+## Current State (preservation baseline)
+- Branch protection: ✅ enabled 2026-04-10
+- First stable tag: `v0.1-2026-04-10` (early-stage snapshot)
+- Project phase: Early development
+
+---
+
+
+
 # CLAUDE.md - Mathly Project Guide
 
 ## What is Mathly?
