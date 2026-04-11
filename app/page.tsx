@@ -250,7 +250,7 @@ export default function LandingPage() {
               <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
               <a href="#features" className="hover:text-white transition-colors">Features</a>
             </div>
-            <p className="text-sm">&copy; 2024 Mathly. From zero to infinity.</p>
+            <p className="text-sm">&copy; 2026 Mathly. From zero to infinity.</p>
           </div>
         </div>
       </footer>
