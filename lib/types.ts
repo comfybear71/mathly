@@ -61,6 +61,35 @@ export interface Lesson {
   xp_reward: number;
   estimated_minutes: number;
   content: Record<string, unknown>;
+  history_intro: LessonHistoryIntro | null;
+  origin_year: number | null;
+  origin_figure: string | null;
+}
+
+export interface LessonHistoryIntro {
+  hook?: string;
+  inventor?: {
+    name: string;
+    birth_year?: number;
+    death_year?: number;
+    nationality?: string;
+    bio?: string;
+  };
+  year_invented?: number;
+  etymology?: {
+    word: string;
+    from: string;
+    parts: { root: string; meaning: string }[];
+  };
+  story_paragraphs?: string[];
+  key_contributors?: { name: string; contribution: string }[];
+  real_world_applications?: { name: string; icon?: string; description: string }[];
+  image?: {
+    url: string | null;
+    alt: string;
+    attribution: string;
+    source_url?: string;
+  };
 }
 
 export interface Question {
