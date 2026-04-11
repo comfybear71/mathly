@@ -1,11 +1,39 @@
 # HANDOFF.md - Mathly Project Status & Handoff
 
+> **Last updated**: 2026-04-11 (end of logarithms pilot session)
+> **Read before** starting any new session, alongside CLAUDE.md and SAFETY-RULES.md.
+
 ## Project Overview
 Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 paths from counting to unsolved problems. Built with Next.js 14.2, Neon Postgres, NextAuth.js, Stripe, and Anthropic Claude AI.
 
 **Repository**: comfybear71/mathly
 **Hosting**: Vercel
-**Branch**: master
+**Default branch**: `master` (protected — ruleset "Protect Master": 0 approvals, dismiss stale, linear history, no force pushes, no deletions)
+**Branch workflow**: `claude/<feature-name>` → PR → squash-merge → delete branch → tag release
+
+## Sacred files (NEVER delete)
+- `CLAUDE.md` — project brain (tech stack, architecture, patterns)
+- `HANDOFF.md` — project memory (this file, updated each session)
+- `SAFETY-RULES.md` — mandatory safety protocol (branch rules, fix spiral prevention, DB safety)
+- `README.md` — bootstrapped Next.js readme
+
+## Release & Tag History
+
+| Tag | Date | Summary |
+|---|---|---|
+| `v0.1-2026-04-10` | 2026-04-10 | Early-stage snapshot — initial build + Supabase→Neon migration + placement test + Stripe wiring |
+| `v0.2-2026-04-11` | 2026-04-11 | Safety protocol documentation — SAFETY-RULES.md + CLAUDE.md safety preamble |
+| `v0.3-2026-04-11` | 2026-04-11 | Logarithms pilot lesson — Story + Practice content template |
+
+## Pull Request History
+
+| PR | Branch | Status |
+|---|---|---|
+| #1 | `claude/build-mathly-app-1myxK` → master | ✅ merged — initial build |
+| #2 | `claude/update-docs-ASh8v` → master | ✅ merged — CLAUDE.md + HANDOFF.md initial docs |
+| #3 | (docs update) | ✅ merged — safety protocol added to CLAUDE.md |
+| #4 | `claude/add-safety-rules` | ✅ merged — SAFETY-RULES.md |
+| #5 | `claude/logarithms-pilot-lesson` | ✅ merged — logarithms pilot + schema migration 002 |
 
 ## Commit History (Chronological)
 
@@ -17,6 +45,10 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 6. **`ef4340c`** — Added data hydration (DataProvider/Zustand), sound effects (Web Audio API), referral system, sign out
 7. **`8f7b5f6`** — Wired pricing page buttons to Stripe checkout flow
 8. **`7d39800`** — Surfaced actual Stripe error messages to help debug checkout issues
+9. **PR #2 merge** — Added CLAUDE.md + HANDOFF.md initial documentation
+10. **PR #3 merge** — Added safety protocol and session workflow to CLAUDE.md
+11. **PR #4 merge** — Added SAFETY-RULES.md with mandatory safety protocol
+12. **PR #5 merge** — Logarithms pilot lesson (schema migration 002 + seed + LessonStory component + lesson page integration)
 
 ## Current State (What Works)
 
@@ -25,8 +57,8 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 - User registration (email/password with bcrypt + Google OAuth)
 - Login/logout with NextAuth.js JWT sessions
 - Math placement test (4 difficulty tiers, 20 client-side questions)
-- Full database schema with 20+ tables (users, curriculum, progress, hearts, streaks, gems, etc.)
-- Seed data for 20 curriculum paths, first 2 paths with units, first 3 units with lessons/questions
+- Full database schema with 20+ tables (users, curriculum, progress, hearts, streaks, gems, etc.) plus migration 002 (history fields on lessons)
+- Seed data for 20 curriculum paths, first 2 paths with units, first 3 units with lessons/questions, **plus the new Logarithms unit under Algebra II**
 - Zustand state management with DataProvider hydration on auth
 - Euler mascot (animated SVG robot with 6 emotional states)
 - Sound effects via Web Audio API (correct, wrong, complete, click)
@@ -39,36 +71,77 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 - Responsive design with Navbar (sidebar on desktop, bottom bar on mobile)
 - TopBar showing hearts, streak, gems, XP
 - Dark mode support (toggle in Zustand store)
+- **Lesson page now fetches from DB** (via `/api/lessons?id=<id>`) with silent fallback to hardcoded DEMO_QUESTIONS
+- **Story + Practice content template** shipped as a pilot (logarithms lesson with inventor spotlight, etymology, multi-paragraph story, key contributors, real-world applications)
 
 ### Partially Implemented
 - **Euler's Mind AI chat**: API route works, UI exists, but requires ANTHROPIC_API_KEY and user must have `ai_agent_unlocked = true`
 - **Stripe payments**: Checkout flow works, but requires full Stripe configuration (secret key, publishable key, webhook secret, 4 price IDs)
-- **Lesson flow**: The lesson page (`/lesson/[id]`) exists but only 3 lessons have seeded questions; remaining paths/units/lessons have no content
+- **Lesson content**: The lesson page (`/lesson/[id]`) now works with real DB content for any lesson that has questions. Only 4 lessons total are seeded (3 Foundations lessons + 1 new Logarithms lesson). Paths 3, 4, 6–20 still have no units, lessons, or questions seeded.
+
+## Content Model (after pilot)
+
+### Lesson "Story + Practice" template (NEW)
+Every lesson can now optionally carry a `history_intro` JSONB blob that drives the Story tab. Shape:
+```
+{
+  hook: string,
+  inventor: { name, birth_year, death_year, nationality, bio },
+  year_invented: number,
+  etymology: { word, from, parts: [{root, meaning}] },
+  story_paragraphs: string[],
+  key_contributors: [{name, contribution}],
+  real_world_applications: [{name, icon, description}],
+  image: { url, alt, attribution, source_url }
+}
+```
+Lessons without `history_intro` skip straight to the Practice view — no regression for legacy content.
+
+**Reference lesson**: `/lesson/33333333-0005-0001-0001-000000000001` (Why Logarithms?)
+
+### New schema columns on `lessons`
+- `history_intro JSONB` — flexible blob (see above)
+- `origin_year INT` — quick-sort/display year
+- `origin_figure TEXT` — quick-display primary mathematician name
+
+Migration: `lib/db/migrations/002_add_history_to_lessons.sql` — additive, `IF NOT EXISTS`, safe to re-run.
+
+### New reusable component
+- `components/ui/LessonStory.tsx` — pure presentational component that renders `history_intro` JSONB with staggered Framer Motion animations. Zero side effects, zero state, zero DB access.
 
 ## Known Issues & Technical Debt
 
 ### Critical
-1. **Incomplete curriculum content**: Only 15 questions across 3 lessons are seeded. Paths 3-20 have no units, lessons, or questions. The app will show empty content for most of the curriculum.
-2. **No content generation pipeline**: There is no system to auto-generate or bulk-import lesson content and questions for the remaining 17+ paths.
+1. **Incomplete curriculum content**: Only 4 lessons total are seeded out of thousands needed across 20 paths. The logarithms pilot is the template — now we need to scale it.
+2. **No content generation pipeline yet**: Next planned work. Should be a script (not a runtime feature) that uses Claude API to generate draft lessons + questions + history_intro, writes to a staging table for human review, then promotes to live.
 
 ### Moderate
 3. **Stripe API version mismatch**: `lib/stripe/client.ts` uses API version `2026-02-25.clover` while `app/api/subscriptions/webhook/route.ts` creates its own Stripe client with `2025-12-18.acacia`. Should use the shared client.
 4. **Font variable naming**: Root layout assigns `--font-nunito` and `--font-source-sans` CSS variables to Geist font files — misleading naming.
 5. **PWA icons likely missing**: `manifest.json` references 8 icon sizes in `/icons/` but these PNG files may not exist in `public/icons/`.
-6. **Legacy Supabase directory**: `supabase/migrations/001_initial_schema.sql` is outdated (references Supabase auth). Active schema is `lib/db/schema.sql`.
+6. **Legacy Supabase directory**: `supabase/migrations/001_initial_schema.sql` is outdated (references Supabase auth). Active schema is `lib/db/schema.sql`. The `supabase/` directory is kept for seed files only (`seed.sql`, `seed-logarithms.sql`).
 7. **No middleware/route protection**: There is no Next.js middleware to redirect unauthenticated users. Auth is checked per-API-route only.
 8. **No email verification**: Signup accepts any email without verification.
 9. **Footer copyright year**: Landing page shows "2024" — should be dynamic or updated.
+10. **Learn page navigation to real lesson IDs**: The `/learn` page currently links to lessons. Need to verify it surfaces the new Logarithms unit under Algebra II (or whether that path is gated/locked).
 
 ### Minor
-10. **No tests**: Zero test files. No unit, integration, or e2e tests.
-11. **XP boost items**: Shop sells "Double XP" items but there's no logic to actually apply the XP multiplier.
-12. **Streak freeze logic**: Streak freezes can be purchased but the auto-application logic when a day is missed is not implemented.
-13. **AI unlock trigger**: No code to detect when all 20 paths are completed and set `ai_agent_unlocked = true`.
-14. **Leaderboard weekly reset**: No cron/scheduled function to create weekly leaderboard entries or handle promotions/demotions.
-15. **Heart refill timer**: Hearts table has `last_refill_at` but no automatic refill logic (e.g., 1 heart per 4 hours).
-16. **Notification creation**: Notification table exists and can be read, but no code generates notifications (e.g., friend requests, achievements earned).
-17. **Family plan member management**: Database tables exist (`family_subscriptions`, `family_members`) but no UI or API for inviting/managing family members.
+11. **No tests**: Zero test files. No unit, integration, or e2e tests.
+12. **XP boost items**: Shop sells "Double XP" items but there's no logic to actually apply the XP multiplier.
+13. **Streak freeze logic**: Streak freezes can be purchased but the auto-application logic when a day is missed is not implemented.
+14. **AI unlock trigger**: No code to detect when all 20 paths are completed and set `ai_agent_unlocked = true`.
+15. **Leaderboard weekly reset**: No cron/scheduled function to create weekly leaderboard entries or handle promotions/demotions.
+16. **Heart refill timer**: Hearts table has `last_refill_at` but no automatic refill logic (e.g., 1 heart per 4 hours).
+17. **Notification creation**: Notification table exists and can be read, but no code generates notifications (e.g., friend requests, achievements earned).
+18. **Family plan member management**: Database tables exist (`family_subscriptions`, `family_members`) but no UI or API for inviting/managing family members.
+19. **No image hosting policy**: Pilot lesson has `image.url: null` with attribution only. Need to decide: `public/history/` in repo, Vercel Blob, or external CDN, before scaling historical images.
+20. **No content attribution UI**: If we embed MacTutor / Wikimedia images, we need a consistent attribution footer/caption pattern.
+
+### Deliberately deferred (YAGNI for now)
+- **Age-tiered content (kids / young-adult / adult)** — Grok proposed this. Decision: skip for now, use existing `difficulty` field on questions.
+- **Dedicated "History of Mathematics" path #21** — Decision: weave history into existing lessons via `history_intro`, don't create a whole new path.
+- **`mathematicians` table** — Not normalized yet. Using free-text `origin_figure` + JSONB `inventor` until we see if the pattern scales.
+- **Three depth modes per lesson** — overbuilding before we have one template proven.
 
 ## Architecture Decisions
 
@@ -77,6 +150,9 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 - **Web Audio API for sounds**: No audio files needed, sounds are synthesized in the browser.
 - **Zustand over React Context**: Simpler API, no provider nesting hell, good for cross-component state.
 - **Client-side placement test**: Questions are hardcoded in the component — no DB dependency for the placement flow.
+- **History content as JSONB blob, not normalized tables**: Flexibility over structure. Normalize later if the pattern proves out and we need to query across mathematicians or applications.
+- **Silent fallback to demo questions**: The lesson page preserves the hardcoded `DEMO_QUESTIONS` as a fallback, so any non-UUID id (e.g., `/lesson/1`) still works as a demo. Zero regression when real DB content is missing.
+- **"Story first, then Practice" flow**: Lessons with `history_intro` render the story as the landing view. Clicking "Start Practice →" switches to the question flow. This preserves the Grok template while leaving the practice UI untouched.
 
 ## Environment Setup
 
@@ -112,47 +188,74 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
 ## Database Initialization
 1. Create a Neon database (or link one via Vercel dashboard)
 2. Run `lib/db/schema.sql` in the Neon SQL editor to create all tables
-3. Run `supabase/seed.sql` to populate curriculum paths, units, lessons, questions, achievements, and shop items
+3. Run `lib/db/migrations/002_add_history_to_lessons.sql` to add history columns (safe, additive)
+4. Run `supabase/seed.sql` to populate curriculum paths, units, lessons, questions, achievements, and shop items
+5. Run `supabase/seed-logarithms.sql` to insert the pilot Logarithms unit + lesson + questions
 
 ## Next Steps (Recommended Priority)
 
-### P0 — Content
-1. Generate questions and lessons for all 20 curriculum paths (this is the biggest gap)
-2. Build a content management system or script to bulk-import curriculum data
+### P0 — Content scaling
+1. **`claude/content-generation-pipeline`** — Build a script (not a runtime feature) that accepts a path/unit/lesson outline and uses Claude API to generate draft `history_intro` + questions. Writes to a staging table for human review before promoting to live. This is the path from "1 pilot lesson" to "full 20-path curriculum".
+2. **`claude/algebra-ii-remaining-units`** — Seed the rest of Algebra II units (complex numbers, polynomials, advanced functions) to validate the template on multiple lessons in the same path.
+3. **`claude/content-policy`** — Add `CONTENT-POLICY.md` documenting approved image sources (Wikimedia, Pexels, Pixabay, Library of Congress, NASA), attribution rules, and a "link don't copy" rule for MacTutor/Mathigon.
 
-### P1 — Core Features
-3. Add Next.js middleware for route protection (redirect to /login if unauthenticated)
-4. Implement AI unlock trigger when all paths are completed
-5. Add heart refill timer logic (1 heart per 4 hours for free users)
-6. Implement streak freeze auto-application
-7. Wire up achievement granting when conditions are met
+### P1 — Core features
+4. Add Next.js middleware for route protection (redirect to /login if unauthenticated)
+5. Implement AI unlock trigger when all paths are completed
+6. Add heart refill timer logic (1 heart per 4 hours for free users)
+7. Implement streak freeze auto-application
+8. Wire up achievement granting when conditions are met
+9. Mathematician spotlight navigation — click the inventor card in Story view to see more lessons by that figure
 
 ### P2 — Polish
-8. Fix Stripe API version mismatch (use shared client everywhere)
-9. Add PWA icons to `public/icons/`
-10. Create notification generation (friend requests, achievements, streak reminders)
-11. Build family plan member management UI
-12. Add email verification flow
-13. Implement XP boost multiplier logic
-14. Add weekly leaderboard reset (Vercel cron or similar)
+10. Fix Stripe API version mismatch (use shared client everywhere)
+11. Add PWA icons to `public/icons/`
+12. Create notification generation (friend requests, achievements, streak reminders)
+13. Build family plan member management UI
+14. Add email verification flow
+15. Implement XP boost multiplier logic
+16. Add weekly leaderboard reset (Vercel cron or similar)
+17. Decide image hosting: `public/history/` in repo vs. Vercel Blob vs. external CDN
 
 ### P3 — Quality
-15. Add tests (at minimum: API route tests, auth flow, progress tracking)
-16. Clean up legacy `supabase/` directory
-17. Fix font variable naming
-18. Add error boundaries and loading states throughout
+18. Add tests (at minimum: API route tests, auth flow, progress tracking, LessonStory render)
+19. Clean up legacy `supabase/migrations/001_initial_schema.sql`
+20. Fix font variable naming
+21. Add error boundaries and loading states throughout
 
 ## Key Files Quick Reference
 
 | Purpose | File |
-|---------|------|
+|---|---|
+| Project guide | `CLAUDE.md` |
+| Session memory (this file) | `HANDOFF.md` |
+| Safety protocol | `SAFETY-RULES.md` |
 | DB schema | `lib/db/schema.sql` |
+| DB migrations | `lib/db/migrations/` |
 | All DB queries | `lib/db/database.ts` |
 | Auth config | `lib/auth/config.ts` |
 | Stripe config | `lib/stripe/client.ts` |
 | AI config | `lib/anthropic/client.ts` |
 | Types | `lib/types.ts` |
 | State store | `store/useStore.ts` |
-| Seed data | `supabase/seed.sql` |
+| Base seed data | `supabase/seed.sql` |
+| Logarithms pilot seed | `supabase/seed-logarithms.sql` |
+| Lesson page (Story + Practice) | `app/(app)/lesson/[id]/page.tsx` |
+| Story view component | `components/ui/LessonStory.tsx` |
 | Env vars | `.env.local.example` |
 | PWA manifest | `public/manifest.json` |
+
+## Session Log
+
+### 2026-04-11 — Logarithms pilot session
+- Added `SAFETY-RULES.md` (PR #4, v0.2-2026-04-11)
+- Added safety protocol preamble to `CLAUDE.md` (PR #3)
+- Built Grok research report — analyzed Grok's content strategy prompt and proposed 5 candidate work items
+- Shipped `claude/logarithms-pilot-lesson` (PR #5, v0.3-2026-04-11):
+  - Schema migration 002 (3 new additive columns on `lessons`)
+  - New `LessonHistoryIntro` TypeScript interface
+  - New `supabase/seed-logarithms.sql` with 1 unit + 1 lesson + 5 questions + full history_intro
+  - New `components/ui/LessonStory.tsx` presentational component
+  - Lesson page now fetches real DB content with silent fallback to demo
+- Established mandatory tag-release format for every session's PR (semver `v<major>.<minor>-<YYYY-MM-DD>`)
+- Deferred: age-tiered content, dedicated history path, normalized mathematicians table, bulk content generation
