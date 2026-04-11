@@ -1,7 +1,18 @@
 # HANDOFF.md - Mathly Project Status & Handoff
 
-> **Last updated**: 2026-04-11 (end of logarithms pilot session)
+> **Last updated**: 2026-04-11 (iPad constraint captured + v0.5 pipeline flagged as needing redesign)
 > **Read before** starting any new session, alongside CLAUDE.md and SAFETY-RULES.md.
+
+## ⚠️ CRITICAL: Developer environment is iPad-only
+
+**The project owner works exclusively from an iPad with no terminal access.** This shapes every design decision. Before proposing any tooling in a new session, read the "Developer Environment" section at the top of CLAUDE.md.
+
+Quick summary:
+- ✅ Can use: GitHub web UI, Vercel dashboard, Neon SQL editor, Safari/Chrome on iPad, copy/paste
+- ❌ Cannot use: terminal, npm/node commands, local dev server, git CLI, local env vars, SSH, local editors
+- 🚫 **Never propose local CLI scripts.** Redesign every workflow as: server-side API route + browser UI inside the Mathly app, or GitHub Actions triggered from the web UI.
+
+**Known violation**: `scripts/generate-lesson.mjs` (shipped in v0.5) requires a local terminal to run. It is **not usable by the owner**. A browser-based replacement is the next priority — see "Next Steps P0" below.
 
 ## Project Overview
 Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 paths from counting to unsolved problems. Built with Next.js 14.2, Neon Postgres, NextAuth.js, Stripe, and Anthropic Claude AI.
@@ -24,6 +35,10 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 | `v0.1-2026-04-10` | 2026-04-10 | Early-stage snapshot — initial build + Supabase→Neon migration + placement test + Stripe wiring |
 | `v0.2-2026-04-11` | 2026-04-11 | Safety protocol documentation — SAFETY-RULES.md + CLAUDE.md safety preamble |
 | `v0.3-2026-04-11` | 2026-04-11 | Logarithms pilot lesson — Story + Practice content template |
+| `v0.3.1-2026-04-11` | 2026-04-11 | HANDOFF post-pilot refresh (docs-only) |
+| `v0.3.2-2026-04-11` | 2026-04-11 | Footer year fix + Vercel redeploy trigger |
+| `v0.4-2026-04-11` | 2026-04-11 | Learn page DB integration — /api/paths + /api/units + dynamic Learn page |
+| `v0.5-2026-04-11` | 2026-04-11 | Content generation pipeline (CLI — ⚠️ not iPad-usable, pending redesign) |
 
 ## Pull Request History
 
@@ -34,6 +49,10 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 | #3 | (docs update) | ✅ merged — safety protocol added to CLAUDE.md |
 | #4 | `claude/add-safety-rules` | ✅ merged — SAFETY-RULES.md |
 | #5 | `claude/logarithms-pilot-lesson` | ✅ merged — logarithms pilot + schema migration 002 |
+| #6 | `claude/update-handoff-post-pilot` | ✅ merged — HANDOFF refresh |
+| #7 | `claude/fix-footer-year` | ✅ merged — footer 2024→2026 + Vercel redeploy trigger |
+| #8 | `claude/learn-page-db-integration` | ✅ merged — /api/paths + /api/units + DB-driven Learn page |
+| #9 | `claude/content-generation-pipeline` | ✅ merged — CLI generator (⚠️ not usable on iPad — redesign pending) |
 
 ## Commit History (Chronological)
 
@@ -194,9 +213,17 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
 
 ## Next Steps (Recommended Priority)
 
-### P0 — Content scaling
-1. **`claude/content-generation-pipeline`** — Build a script (not a runtime feature) that accepts a path/unit/lesson outline and uses Claude API to generate draft `history_intro` + questions. Writes to a staging table for human review before promoting to live. This is the path from "1 pilot lesson" to "full 20-path curriculum".
-2. **`claude/algebra-ii-remaining-units`** — Seed the rest of Algebra II units (complex numbers, polynomials, advanced functions) to validate the template on multiple lessons in the same path.
+### P0 — iPad-friendly content generation (blocks all content work)
+1. **`claude/ipad-admin-content-page`** — Replace the local CLI generator shipped in v0.5 with a browser-based equivalent the iPad owner can actually use. Proposed shape:
+   - New `POST /api/admin/generate-lesson` route that accepts an outline JSON body, calls Claude server-side using the existing Vercel `ANTHROPIC_API_KEY`, returns the generated SQL as plain text in the response
+   - New `/admin/generate-lesson` page in the Mathly app with a form (path, unit, lesson name, brief, question count), a "Generate" button, and a scrollable output panel with a "Copy SQL" button
+   - Auth: email allowlist via `ADMIN_EMAILS` Vercel env var (checked against session.user.email). Only the owner can call the endpoint.
+   - Reuses the prompt template from `scripts/prompts/generate-lesson-system.md` — that file stays as the single source of truth
+   - **After this ships**, the owner can: open the admin page in Safari, paste an outline, click Generate, copy the SQL, switch to Neon Console, paste and run, refresh /learn
+   - The existing `scripts/generate-lesson.mjs` can stay in the repo as a CLI alternative for future contributors with terminals, but it is no longer the primary path
+
+### P0 — Content scaling (blocked until above ships)
+2. **`claude/algebra-ii-remaining-units`** — Once the admin page works, seed the rest of Algebra II units (complex numbers, polynomials, advanced functions) using the browser-based generator. Validates the template on multiple lessons in the same path.
 3. **`claude/content-policy`** — Add `CONTENT-POLICY.md` documenting approved image sources (Wikimedia, Pexels, Pixabay, Library of Congress, NASA), attribution rules, and a "link don't copy" rule for MacTutor/Mathigon.
 
 ### P1 — Core features

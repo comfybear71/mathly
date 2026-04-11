@@ -39,6 +39,47 @@
 ## What is Mathly?
 Mathly is a gamified mathematics learning PWA (Progressive Web App) — think "Duolingo for math." It covers 20 curriculum paths from basic counting to topology and unsolved problems, with a Duolingo-style gamification layer (XP, hearts, streaks, leagues, achievements, gems, shop).
 
+## ⚠️ Developer Environment — READ BEFORE PROPOSING ANY TOOLING
+
+**The project owner works exclusively from an iPad.** This is a hard constraint that shapes every design decision.
+
+### What the owner CAN do
+- Use the GitHub web UI (create/merge/review PRs, edit files, create releases, manage branches)
+- Use the Vercel dashboard (deployments, env vars, settings, logs)
+- Use the Neon SQL editor (run SQL via the Neon Console accessed through Vercel Storage)
+- Use Safari/Chrome on iPad to interact with the live Mathly app
+- Copy/paste from chat into any of the above
+- Take screenshots
+
+### What the owner CANNOT do
+- **Run a terminal / shell commands of any kind** — no `npm install`, no `npm run ...`, no `git pull`, no `node script.js`, no `export VAR=...`
+- Run local dev servers (no `npm run dev`)
+- Set environment variables on a local machine (no `~/.zshrc` edits)
+- Run build tools, linters, formatters, or test runners locally
+- Use `git` CLI — all git operations happen via GitHub web UI
+- SSH into any server
+- Edit files with a local code editor — all editing happens via GitHub web UI or Claude
+
+### Design implications (MANDATORY for every session)
+
+1. **Never propose a solution that requires the owner to run a local script.** If the solution requires a CLI or local Node.js execution, it is useless — redesign it as a server-side API route + browser UI inside the Mathly app, or as a GitHub Actions workflow triggered from the web UI.
+
+2. **Every build-and-test cycle happens on Vercel.** The owner merges a PR, Vercel rebuilds production, the owner tests on the live site. There is no "test locally before merging". Claude Code (this session) can run `npm run build` locally as a pre-merge sanity check, but the owner cannot.
+
+3. **Environment variables live in Vercel**, never on the owner's machine. If a script needs `ANTHROPIC_API_KEY`, that key is already configured in Vercel project settings and is accessible to API routes via `process.env.ANTHROPIC_API_KEY` — but not to any local tool.
+
+4. **Database migrations must be pasted into the Neon SQL editor.** The owner cannot `psql`, cannot run a migration runner, cannot run seed scripts locally. Every SQL change must be presented as a copy-paste block the owner can paste into the Neon Console.
+
+5. **Content generation, admin tooling, and any repeatable workflow must be a web UI inside the Mathly app.** The pattern is: a server-side `/api/admin/*` route that does the work, and a `/admin/*` page in the app that provides the form/button/output.
+
+6. **Claude in this session runs commands on your behalf for sanity checks** (type check, local build, file reads) — but anything the owner must be able to repeat without you has to be browser-accessible.
+
+### Known violations to fix (as of this writing)
+
+- **`scripts/generate-lesson.mjs` (v0.5)** — requires `npm run generate-lesson` locally. Not usable by the owner. Must be replaced with a `/api/admin/generate-lesson` route + `/admin/generate-lesson` page before the content pipeline is actually usable.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
