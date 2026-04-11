@@ -1,0 +1,13 @@
+{
+  "path_name": "Algebra II",
+  "path_id": "11111111-0001-0001-0001-000000000005",
+  "unit_name": "Exponents & Radicals",
+  "unit_description": "Master powers, roots, and the notation mathematicians took centuries to invent",
+  "unit_order_index": 2,
+  "unit_icon": "💪",
+  "unit_id": null,
+  "lesson_name": "Rules of Exponents",
+  "lesson_type": "tutorial",
+  "question_count": 5,
+  "brief": "Teach the three core rules of exponents: the product rule (a^m × a^n = a^(m+n)), the quotient rule (a^m ÷ a^n = a^(m-n)), and the power rule ((a^m)^n = a^(m×n)). Include the historical story of exponent notation. Key figures: Nicolas Chuquet (French, ~1445–1488) who introduced a form of exponent notation in his 1484 manuscript Triparty en la science des nombres; Michael Stifel (German, 1487–1567) who further developed exponent ideas in Arithmetica Integra (1544); and René Descartes (French, 1596–1650) who standardized the modern superscript notation in La Géométrie (1637). The hook should emphasize that before this notation, mathematicians had to write 'a times a times a times a times a times a' or 'aaaaaa' to mean a^6 — imagine doing physics like that. Real-world applications: scientific notation (measuring atoms to galaxies), computer memory (kilobytes/megabytes/gigabytes as powers of 2 or 10), compound interest, population growth models, and pH (which is log-based but tied to exponents). Generate 5 questions mixing multiple_choice and fill_in_blank, ordered easy to medium difficulty, that test the product, quotient, and power rules with specific numeric examples like 2^3 × 2^4, 5^7 ÷ 5^3, and (3^2)^4."
+}
