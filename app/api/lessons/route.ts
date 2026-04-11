@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+};
 
 export async function GET(request: Request) {
   try {
@@ -12,12 +17,15 @@ export async function GET(request: Request) {
     if (lessonId) {
       const { rows: lessons } = await sql`SELECT * FROM lessons WHERE id = ${lessonId}`;
       const { rows: questions } = await sql`SELECT * FROM questions WHERE lesson_id = ${lessonId} ORDER BY order_index`;
-      return NextResponse.json({ lesson: lessons[0] || null, questions });
+      return NextResponse.json(
+        { lesson: lessons[0] || null, questions },
+        { headers: NO_CACHE_HEADERS }
+      );
     }
 
     if (unitId) {
       const { rows: lessons } = await sql`SELECT * FROM lessons WHERE unit_id = ${unitId} ORDER BY order_index`;
-      return NextResponse.json({ lessons });
+      return NextResponse.json({ lessons }, { headers: NO_CACHE_HEADERS });
     }
 
     return NextResponse.json({ error: 'Provide id or unit_id' }, { status: 400 });

@@ -4,6 +4,7 @@ import { sql } from '@vercel/postgres';
 // GET /api/units?path_id=<uuid> — returns units for the given path,
 // ordered by order_index. Public endpoint (no auth check).
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +21,14 @@ export async function GET(request: Request) {
       ORDER BY order_index
     `;
 
-    return NextResponse.json({ units: rows });
+    return NextResponse.json(
+      { units: rows },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Units API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

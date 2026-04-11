@@ -75,7 +75,7 @@ export default function LearnPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/paths');
+        const res = await fetch('/api/paths', { cache: 'no-store' });
         if (!res.ok) throw new Error(`status ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
@@ -101,7 +101,7 @@ export default function LearnPage() {
     if (unitsByPath[pathId]) return;
     setLoadingUnitsForPath(pathId);
     try {
-      const res = await fetch(`/api/units?path_id=${encodeURIComponent(pathId)}`);
+      const res = await fetch(`/api/units?path_id=${encodeURIComponent(pathId)}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       const data = await res.json();
       setUnitsByPath((prev) => ({ ...prev, [pathId]: Array.isArray(data?.units) ? data.units : [] }));
@@ -118,7 +118,7 @@ export default function LearnPage() {
     if (lessonsByUnit[unitId]) return;
     setLoadingLessonsForUnit(unitId);
     try {
-      const res = await fetch(`/api/lessons?unit_id=${encodeURIComponent(unitId)}`);
+      const res = await fetch(`/api/lessons?unit_id=${encodeURIComponent(unitId)}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       const data = await res.json();
       setLessonsByUnit((prev) => ({ ...prev, [unitId]: Array.isArray(data?.lessons) ? data.lessons : [] }));
