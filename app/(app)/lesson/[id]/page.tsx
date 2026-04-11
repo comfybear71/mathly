@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { playCorrectSound, playWrongSound, playCompleteSound } from '@/lib/sounds';
@@ -11,6 +11,8 @@ import HeartsDisplay from '@/components/ui/HeartsDisplay';
 import XPPopup from '@/components/ui/XPPopup';
 import Confetti from '@/components/ui/Confetti';
 import EulerMascot from '@/components/mascot/EulerMascot';
+import LessonStory from '@/components/ui/LessonStory';
+import type { LessonHistoryIntro } from '@/lib/types';
 
 type QuestionTypeVal = 'multiple_choice' | 'fill_in_blank' | 'equation_solver' | 'drag_drop' | 'true_false' | 'word_problem' | 'proof_builder' | 'match_pairs';
 
@@ -26,7 +28,7 @@ interface DemoQuestion {
   xp_value: number;
 }
 
-// Demo questions - would come from DB
+// Demo questions - fallback when a lesson has no DB-backed questions
 const DEMO_QUESTIONS: DemoQuestion[] = [
   {
     id: '1', question_type: 'multiple_choice', difficulty: 'easy',
@@ -66,11 +68,46 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
 ];
 
 type AnswerState = 'idle' | 'correct' | 'wrong';
+type LessonView = 'story' | 'practice';
+
+// Normalize a JSONB correct_answer (may arrive as string, number, or boolean)
+// to a plain string for comparison with user input.
+function normalizeCorrectAnswer(raw: unknown): string {
+  if (raw === null || raw === undefined) return '';
+  if (typeof raw === 'string') return raw;
+  return String(raw);
+}
+
+// Map a DB question row into the shape the practice UI already renders.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapDbQuestion(q: any): DemoQuestion {
+  return {
+    id: q.id,
+    question_type: q.question_type,
+    difficulty: q.difficulty,
+    question_text: q.question_text,
+    options: q.options ?? null,
+    correct_answer: normalizeCorrectAnswer(q.correct_answer),
+    explanation: q.explanation ?? '',
+    hint: q.hint ?? '',
+    xp_value: q.xp_value ?? 5,
+  };
+}
 
 export default function LessonPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const lessonId = params?.id;
   const { hearts, loseHeart, addXP, soundEnabled } = useStore();
 
+  // Lesson content state (fetched from DB, falls back to demo)
+  const [lessonName, setLessonName] = useState<string>('');
+  const [historyIntro, setHistoryIntro] = useState<LessonHistoryIntro | null>(null);
+  const [questions, setQuestions] = useState<DemoQuestion[]>(DEMO_QUESTIONS);
+  const [view, setView] = useState<LessonView>('practice');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Practice state (unchanged)
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [fillAnswer, setFillAnswer] = useState('');
@@ -85,7 +122,49 @@ export default function LessonPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const questions = DEMO_QUESTIONS;
+  // Fetch lesson + questions from DB.
+  // On any failure (network, non-UUID demo id, missing content) we silently
+  // fall back to DEMO_QUESTIONS so the existing demo flow keeps working.
+  useEffect(() => {
+    if (!lessonId) {
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/lessons?id=${encodeURIComponent(lessonId)}`);
+        if (!res.ok) throw new Error('lesson fetch failed');
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (data?.lesson) {
+          setLessonName(data.lesson.name ?? '');
+          setHistoryIntro(data.lesson.history_intro ?? null);
+
+          if (Array.isArray(data.questions) && data.questions.length > 0) {
+            setQuestions(data.questions.map(mapDbQuestion));
+          }
+
+          // If the lesson has a story, show it first
+          if (data.lesson.history_intro) {
+            setView('story');
+          }
+        }
+      } catch {
+        // Silent fallback to demo — matches pre-existing behavior
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lessonId]);
+
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + (answerState !== 'idle' ? 1 : 0)) / questions.length) * 100;
 
@@ -123,6 +202,19 @@ export default function LessonPage() {
       if (soundEnabled) playCompleteSound();
     }
   };
+
+  // Render the Story tab before practice if the lesson has history content.
+  // Placed after all hooks to satisfy React's rules-of-hooks.
+  if (!isLoading && view === 'story' && historyIntro) {
+    return (
+      <LessonStory
+        history={historyIntro}
+        lessonName={lessonName || 'This Topic'}
+        onContinue={() => setView('practice')}
+        continueLabel="Start Practice"
+      />
+    );
+  }
 
   if (showComplete) {
     const score = Math.round((correctCount / questions.length) * 100);
