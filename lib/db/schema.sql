@@ -245,6 +245,12 @@ CREATE TABLE IF NOT EXISTS referrals (
 -- Add referral_code to users
 ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
 
+-- Add history/origin fields to lessons (additive, safe migration)
+-- Supports the "Story" tab alongside "Practice" in each lesson (Grok content template)
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS history_intro JSONB DEFAULT NULL;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS origin_year INTEGER DEFAULT NULL;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS origin_figure TEXT DEFAULT NULL;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_user_progress_user ON user_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_progress_lesson ON user_progress(lesson_id);
