@@ -16,11 +16,11 @@ export async function GET(request: Request) {
 
     const { rows } = await sql`
       SELECT * FROM units
-      WHERE path_id = ${pathId}
+      WHERE path_id::text = ${pathId}
       ORDER BY order_index
     `;
 
-    console.log(`[/api/units] path_id=${pathId} → returned ${rows.length} units:`, rows.map(r => r.name));
+    console.log(`[units] path_id=${pathId} → ${rows.length} rows:`, rows.map(r => r.name));
 
     return NextResponse.json({ units: rows });
   } catch (error) {
