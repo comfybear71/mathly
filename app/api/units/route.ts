@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const { rows } = await sql`
       SELECT * FROM units
-      WHERE path_id::text = ${pathId}
+      WHERE path_id = ${pathId}::uuid
       ORDER BY order_index
     `;
 

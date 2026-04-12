@@ -27,11 +27,11 @@ export async function POST(request: Request) {
     `;
 
     if (xp_earned > 0) {
-      await sql`UPDATE users SET total_xp = total_xp + ${xp_earned} WHERE id::text = ${userId}`;
+      await sql`UPDATE users SET total_xp = total_xp + ${xp_earned} WHERE id = ${userId}::uuid`;
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const { rows: streakRows } = await sql`SELECT * FROM streaks WHERE user_id::text = ${userId}`;
+    const { rows: streakRows } = await sql`SELECT * FROM streaks WHERE user_id = ${userId}::uuid`;
 
     if (streakRows[0]) {
       const streak = streakRows[0];
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
           current_streak = ${newStreak},
           longest_streak = ${Math.max(newStreak, streak.longest_streak)},
           last_activity_date = ${today}
-        WHERE user_id::text = ${userId}
+        WHERE user_id = ${userId}::uuid
       `;
     }
 
@@ -68,7 +68,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { rows } = await sql`SELECT * FROM user_progress WHERE user_id::text = ${session.user.id}`;
+    const { rows } = await sql`SELECT * FROM user_progress WHERE user_id = ${session.user.id}::uuid`;
     return NextResponse.json({ progress: rows });
   } catch (error) {
     console.error('Progress GET error:', error);
