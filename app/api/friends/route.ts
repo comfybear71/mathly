@@ -19,7 +19,7 @@ export async function GET(request: Request) {
           json_build_object('id', req.id, 'username', req.username, 'display_name', req.display_name, 'avatar_url', req.avatar_url) as requester
         FROM friendships f
         JOIN users req ON req.id = f.requester_id
-        WHERE f.addressee_id::text = ${userId} AND f.status = 'pending'
+        WHERE f.addressee_id = ${userId}::uuid AND f.status = 'pending'
       `;
       return NextResponse.json({ requests: rows });
     }
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       FROM friendships f
       JOIN users req ON req.id = f.requester_id
       JOIN users addr ON addr.id = f.addressee_id
-      WHERE (f.requester_id::text = ${userId} OR f.addressee_id::text = ${userId}) AND f.status = 'accepted'
+      WHERE (f.requester_id = ${userId}::uuid OR f.addressee_id = ${userId}::uuid) AND f.status = 'accepted'
     `;
 
     return NextResponse.json({ friends: rows });
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
     if (action === 'accept' || action === 'decline') {
       const status = action === 'accept' ? 'accepted' : 'blocked';
-      await sql`UPDATE friendships SET status = ${status} WHERE id::text = ${friendshipId} AND addressee_id = ${userId}`;
+      await sql`UPDATE friendships SET status = ${status} WHERE id = ${friendshipId}::uuid AND addressee_id = ${userId}::uuid`;
       return NextResponse.json({ success: true });
     }
 

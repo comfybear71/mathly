@@ -15,7 +15,7 @@ export async function POST(request: Request) {
         placement_test_completed = true,
         level = ${getLevelNumber(level)},
         onboarding_completed = true
-      WHERE id::text = ${userId}
+      WHERE id = ${userId}::uuid
     `;
 
     return NextResponse.json({ success: true, level, score, startPath });

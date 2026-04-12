@@ -8,7 +8,7 @@ import type {
 
 // User functions
 export async function getUser(userId: string): Promise<User | null> {
-  const { rows } = await sql`SELECT * FROM users WHERE id::text = ${userId}`;
+  const { rows } = await sql`SELECT * FROM users WHERE id = ${userId}::uuid`;
   return rows[0] as User || null;
 }
 
@@ -64,33 +64,33 @@ export async function getAllPaths(): Promise<CurriculumPath[]> {
 }
 
 export async function getUnitsForPath(pathId: string): Promise<Unit[]> {
-  const { rows } = await sql`SELECT * FROM units WHERE path_id::text = ${pathId} ORDER BY order_index`;
+  const { rows } = await sql`SELECT * FROM units WHERE path_id = ${pathId}::uuid ORDER BY order_index`;
   return rows as Unit[];
 }
 
 export async function getLessonsForUnit(unitId: string): Promise<Lesson[]> {
-  const { rows } = await sql`SELECT * FROM lessons WHERE unit_id::text = ${unitId} ORDER BY order_index`;
+  const { rows } = await sql`SELECT * FROM lessons WHERE unit_id = ${unitId}::uuid ORDER BY order_index`;
   return rows as Lesson[];
 }
 
 export async function getLesson(lessonId: string): Promise<Lesson | null> {
-  const { rows } = await sql`SELECT * FROM lessons WHERE id::text = ${lessonId}`;
+  const { rows } = await sql`SELECT * FROM lessons WHERE id = ${lessonId}::uuid`;
   return rows[0] as Lesson || null;
 }
 
 export async function getQuestionsForLesson(lessonId: string): Promise<Question[]> {
-  const { rows } = await sql`SELECT * FROM questions WHERE lesson_id::text = ${lessonId} ORDER BY order_index`;
+  const { rows } = await sql`SELECT * FROM questions WHERE lesson_id = ${lessonId}::uuid ORDER BY order_index`;
   return rows as Question[];
 }
 
 // Progress functions
 export async function getUserProgress(userId: string, lessonId: string): Promise<UserProgress | null> {
-  const { rows } = await sql`SELECT * FROM user_progress WHERE user_id::text = ${userId} AND lesson_id::text = ${lessonId}`;
+  const { rows } = await sql`SELECT * FROM user_progress WHERE user_id = ${userId}::uuid AND lesson_id = ${lessonId}::uuid`;
   return rows[0] as UserProgress || null;
 }
 
 export async function getAllUserProgress(userId: string): Promise<UserProgress[]> {
-  const { rows } = await sql`SELECT * FROM user_progress WHERE user_id::text = ${userId}`;
+  const { rows } = await sql`SELECT * FROM user_progress WHERE user_id = ${userId}::uuid`;
   return rows as UserProgress[];
 }
 
@@ -112,7 +112,7 @@ export async function saveUserProgress(progress: Omit<UserProgress, 'id'>): Prom
 }
 
 export async function getUserPathProgress(userId: string): Promise<UserPathProgress[]> {
-  const { rows } = await sql`SELECT * FROM user_path_progress WHERE user_id::text = ${userId}`;
+  const { rows } = await sql`SELECT * FROM user_path_progress WHERE user_id = ${userId}::uuid`;
   return rows as UserPathProgress[];
 }
 
@@ -131,7 +131,7 @@ export async function updatePathProgress(userId: string, pathId: string, updates
 
 // Hearts functions
 export async function getHearts(userId: string): Promise<Hearts | null> {
-  const { rows } = await sql`SELECT * FROM hearts WHERE user_id::text = ${userId}`;
+  const { rows } = await sql`SELECT * FROM hearts WHERE user_id = ${userId}::uuid`;
   return rows[0] as Hearts || null;
 }
 
@@ -151,7 +151,7 @@ export async function updateHearts(userId: string, updates: Partial<Hearts>): Pr
 
 // Streak functions
 export async function getStreak(userId: string): Promise<Streak | null> {
-  const { rows } = await sql`SELECT * FROM streaks WHERE user_id::text = ${userId}`;
+  const { rows } = await sql`SELECT * FROM streaks WHERE user_id = ${userId}::uuid`;
   return rows[0] as Streak || null;
 }
 
@@ -171,7 +171,7 @@ export async function updateStreak(userId: string, updates: Partial<Streak>): Pr
 
 // Gems functions
 export async function getGems(userId: string): Promise<Gems | null> {
-  const { rows } = await sql`SELECT * FROM gems WHERE user_id::text = ${userId}`;
+  const { rows } = await sql`SELECT * FROM gems WHERE user_id = ${userId}::uuid`;
   return rows[0] as Gems || null;
 }
 
@@ -209,7 +209,7 @@ export async function getUserAchievements(userId: string): Promise<UserAchieveme
     SELECT ua.*, row_to_json(a) as achievement
     FROM user_achievements ua
     JOIN achievements a ON a.id = ua.achievement_id
-    WHERE ua.user_id::text = ${userId}
+    WHERE ua.user_id = ${userId}::uuid
   `;
   return rows as UserAchievement[];
 }
@@ -225,31 +225,31 @@ export async function grantAchievement(userId: string, achievementId: string): P
 // Notification functions
 export async function getNotifications(userId: string): Promise<Notification[]> {
   const { rows } = await sql`
-    SELECT * FROM notifications WHERE user_id::text = ${userId}
+    SELECT * FROM notifications WHERE user_id = ${userId}::uuid
     ORDER BY created_at DESC LIMIT 50
   `;
   return rows as Notification[];
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {
-  await sql`UPDATE notifications SET read = true WHERE id::text = ${notificationId}`;
+  await sql`UPDATE notifications SET read = true WHERE id = ${notificationId}::uuid`;
 }
 
 export async function markAllNotificationsRead(userId: string): Promise<void> {
-  await sql`UPDATE notifications SET read = true WHERE user_id::text = ${userId} AND read = false`;
+  await sql`UPDATE notifications SET read = true WHERE user_id = ${userId}::uuid AND read = false`;
 }
 
 // AI Conversation functions
 export async function getConversations(userId: string): Promise<AIConversation[]> {
   const { rows } = await sql`
-    SELECT * FROM ai_conversations WHERE user_id::text = ${userId}
+    SELECT * FROM ai_conversations WHERE user_id = ${userId}::uuid
     ORDER BY created_at DESC
   `;
   return rows as AIConversation[];
 }
 
 export async function getConversation(conversationId: string): Promise<AIConversation | null> {
-  const { rows } = await sql`SELECT * FROM ai_conversations WHERE id::text = ${conversationId}`;
+  const { rows } = await sql`SELECT * FROM ai_conversations WHERE id = ${conversationId}::uuid`;
   return rows[0] as AIConversation || null;
 }
 
@@ -301,7 +301,7 @@ export async function getFriends(userId: string) {
     FROM friendships f
     JOIN users req ON req.id = f.requester_id
     JOIN users addr ON addr.id = f.addressee_id
-    WHERE (f.requester_id::text = ${userId} OR f.addressee_id::text = ${userId}) AND f.status = 'accepted'
+    WHERE (f.requester_id = ${userId}::uuid OR f.addressee_id = ${userId}::uuid) AND f.status = 'accepted'
   `;
   return rows;
 }
@@ -312,7 +312,7 @@ export async function getPendingFriendRequests(userId: string) {
       json_build_object('id', req.id, 'username', req.username, 'display_name', req.display_name, 'avatar_url', req.avatar_url) as requester
     FROM friendships f
     JOIN users req ON req.id = f.requester_id
-    WHERE f.addressee_id::text = ${userId} AND f.status = 'pending'
+    WHERE f.addressee_id = ${userId}::uuid AND f.status = 'pending'
   `;
   return rows;
 }
@@ -328,7 +328,7 @@ export async function sendFriendRequest(requesterId: string, addresseeId: string
 
 export async function respondToFriendRequest(friendshipId: string, status: 'accepted' | 'blocked') {
   const { rows } = await sql`
-    UPDATE friendships SET status = ${status} WHERE id::text = ${friendshipId} RETURNING *
+    UPDATE friendships SET status = ${status} WHERE id = ${friendshipId}::uuid RETURNING *
   `;
   return rows[0];
 }
@@ -344,16 +344,16 @@ export async function initializeUserRecords(userId: string): Promise<void> {
 
 // Increment user XP
 export async function incrementUserXP(userId: string, xpAmount: number): Promise<void> {
-  await sql`UPDATE users SET total_xp = total_xp + ${xpAmount} WHERE id::text = ${userId}`;
+  await sql`UPDATE users SET total_xp = total_xp + ${xpAmount} WHERE id = ${userId}::uuid`;
 }
 
 // Referral functions
 export async function getUserReferralCode(userId: string): Promise<string> {
-  const { rows } = await sql`SELECT referral_code FROM users WHERE id::text = ${userId}`;
+  const { rows } = await sql`SELECT referral_code FROM users WHERE id = ${userId}::uuid`;
   if (rows[0]?.referral_code) return rows[0].referral_code;
 
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  await sql`UPDATE users SET referral_code = ${code} WHERE id::text = ${userId}`;
+  await sql`UPDATE users SET referral_code = ${code} WHERE id = ${userId}::uuid`;
   return code;
 }
 
@@ -373,13 +373,13 @@ export async function createReferral(referrerId: string, referredId: string) {
 }
 
 export async function getReferralStats(userId: string) {
-  const { rows: total } = await sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id::text = ${userId}`;
-  const { rows: completed } = await sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id::text = ${userId} AND status = 'completed'`;
+  const { rows: total } = await sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ${userId}::uuid`;
+  const { rows: completed } = await sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ${userId}::uuid AND status = 'completed'`;
   const { rows: referrals } = await sql`
     SELECT r.*, json_build_object('id', u.id, 'username', u.username, 'display_name', u.display_name, 'avatar_url', u.avatar_url) as referred_user
     FROM referrals r
     JOIN users u ON u.id = r.referred_id
-    WHERE r.referrer_id::text = ${userId}
+    WHERE r.referrer_id = ${userId}::uuid
     ORDER BY r.created_at DESC
     LIMIT 20
   `;
@@ -393,12 +393,12 @@ export async function getReferralStats(userId: string) {
 
 export async function completeReferral(referredId: string) {
   const { rows } = await sql`
-    UPDATE referrals SET status = 'completed' WHERE referred_id::text = ${referredId} AND status = 'pending' RETURNING *
+    UPDATE referrals SET status = 'completed' WHERE referred_id = ${referredId}::uuid AND status = 'pending' RETURNING *
   `;
   if (rows[0] && !rows[0].gems_rewarded) {
-    await sql`UPDATE gems SET balance = balance + 100 WHERE user_id::text = ${rows[0].referrer_id}`;
-    await sql`UPDATE gems SET balance = balance + 50 WHERE user_id::text = ${referredId}`;
-    await sql`UPDATE referrals SET gems_rewarded = true WHERE id::text = ${rows[0].id}`;
+    await sql`UPDATE gems SET balance = balance + 100 WHERE user_id = ${rows[0].referrer_id}::uuid`;
+    await sql`UPDATE gems SET balance = balance + 50 WHERE user_id = ${referredId}::uuid`;
+    await sql`UPDATE referrals SET gems_rewarded = true WHERE id = ${rows[0].id}::uuid`;
   }
   return rows[0] || null;
 }
