@@ -20,6 +20,8 @@ export async function GET(request: Request) {
       ORDER BY order_index
     `;
 
+    console.log(`[/api/units] path_id=${pathId} → returned ${rows.length} units:`, rows.map(r => r.name));
+
     return NextResponse.json({ units: rows });
   } catch (error) {
     console.error('Units API error:', error);
