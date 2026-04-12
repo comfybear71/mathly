@@ -95,22 +95,30 @@ import { sql } from '@/lib/db';
 import { sql } from '@vercel/postgres';
 ```
 
-### UUID parameterized query bug (discovered 2026-04-12)
-When comparing a UUID column against a parameterized string value (`${pathId}`), `@vercel/postgres` can silently return incomplete results. The fix is to cast the UUID column to text in the WHERE clause:
+### UUID parameterized query bug (discovered 2026-04-12, final fix PR #23)
+When comparing a UUID column against a parameterized string value (`${pathId}`), `@vercel/postgres` can silently return incomplete results. **Cast the PARAMETER to `::uuid`**, not the column to `::text`:
 
 ```sql
--- ✅ CORRECT — always cast UUID columns to text in parameterized WHERE clauses
+-- ✅ CORRECT — cast the parameter to ::uuid
+SELECT * FROM units WHERE path_id = ${pathId}::uuid ORDER BY order_index
+SELECT * FROM lessons WHERE unit_id = ${unitId}::uuid ORDER BY order_index
+
+-- ❌ WRONG — column::text is unreliable (worked for some queries, failed for others)
 SELECT * FROM units WHERE path_id::text = ${pathId} ORDER BY order_index
 
--- ❌ WRONG — may silently drop rows with @vercel/postgres parameterized queries
+-- ❌ WRONG — no cast at all, silently drops rows
 SELECT * FROM units WHERE path_id = ${pathId} ORDER BY order_index
 ```
 
-This applies to ALL tables with UUID primary/foreign keys when filtering via parameterized queries. When writing new API routes, always use `column::text = ${param}` for UUID comparisons.
+This applies to ALL tables with UUID primary/foreign keys when filtering via parameterized queries. When writing new API routes, always use `column = ${param}::uuid` for UUID comparisons. Non-UUID columns (email, username, status, etc.) do NOT need any cast.
 
-**Root cause**: `@vercel/postgres` sends parameterized values as TEXT. PostgreSQL's UUID-to-TEXT comparison can behave inconsistently depending on the query planner and index usage. Casting explicitly avoids the ambiguity.
+**Root cause**: `@vercel/postgres` sends parameterized values as TEXT. PostgreSQL's implicit UUID-to-TEXT comparison is unreliable. Casting the parameter explicitly to `::uuid` makes the comparison type-safe.
 
-**Bug ticket**: PRs #12–#15 (2026-04-12). Took 4 PRs to fully diagnose and fix.
+**Why `::text` on the column didn't work**: The `column::text = ${param}` approach was tried first (PRs #12–#17) but proved unreliable — it worked for `/api/units` but returned empty results for `/api/lessons` with identical data. The `${param}::uuid` approach (PR #23) works universally because it keeps the column in native UUID type and explicitly converts the incoming text.
+
+**Diagnosis method**: `/api/dbcheck` endpoint confirmed data existed in the DB. Then a debug version of `/api/lessons` compared both approaches side-by-side: `column::text` returned 0 rows, `param::uuid` returned 5 rows for the same unit_id. PRs #12–#23 document the full investigation.
+
+**Bonus**: `${param}::uuid` enables index usage on UUID columns, unlike `column::text` which forces a sequential scan.
 
 ---
 
@@ -309,7 +317,7 @@ npm run lint     # ESLint
 
 ## Key Patterns
 - **All DB imports MUST come from `@/lib/db`**, never from `@vercel/postgres` directly (see Database Connection Rules above)
-- **UUID WHERE clauses MUST cast to text**: `WHERE id::text = ${param}` (see UUID bug above)
+- **UUID WHERE clauses MUST cast the parameter**: `WHERE id = ${param}::uuid` (see UUID bug above)
 - API routes use `auth()` from NextAuth for session checking
 - All DB operations go through `lib/db/database.ts` — no direct SQL in components
 - Client state managed via Zustand (`store/useStore.ts`), hydrated by `DataProvider`

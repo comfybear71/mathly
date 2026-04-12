@@ -1,6 +1,6 @@
 # HANDOFF.md - Mathly Project Status & Handoff
 
-> **Last updated**: 2026-04-12 (DATABASE_URL + UUID bug fixed, admin content page shipped, full content pipeline working end-to-end)
+> **Last updated**: 2026-04-12 (UUID fix finalized with `::uuid` param cast, Pre-Algebra content shipped, Foundations complete)
 > **Read before** starting any new session, alongside CLAUDE.md and SAFETY-RULES.md.
 
 ## ⚠️ CRITICAL: Developer environment is iPad-only
@@ -44,6 +44,9 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 | `v0.7-2026-04-12` | 2026-04-12 | Fix DATABASE_URL env var mismatch (Neon uses DATABASE_URL, not POSTGRES_URL) |
 | `v0.7.1-2026-04-12` | 2026-04-12 | Diagnostic endpoint /api/dbcheck + logging |
 | `v0.7.2-2026-04-12` | 2026-04-12 | Fix UUID parameterized query bug in /api/units |
+| `v0.8-2026-04-12` | 2026-04-12 | Global UUID fix (::text on all routes) + full curriculum plan |
+| `v0.9.1-2026-04-12` | 2026-04-12 | Pre-Algebra content (32 lessons, 160 questions) |
+| `v1.0-2026-04-12` | 2026-04-12 | Final UUID fix: switch from column::text to param::uuid across all routes |
 
 ## Pull Request History
 
@@ -58,11 +61,17 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 | #7 | `claude/fix-footer-year` | ✅ merged — footer 2024→2026 + Vercel redeploy trigger |
 | #8 | `claude/learn-page-db-integration` | ✅ merged — /api/paths + /api/units + DB-driven Learn page |
 | #9 | `claude/content-generation-pipeline` | ✅ merged — CLI generator (kept for terminal users) |
-| #10 | `claude/ipad-constraint-docs` | ✅ merged — iPad-only constraint documented in CLAUDE.md + HANDOFF.md |
+| #10 | `claude/ipad-constraint-docs` | ✅ merged — iPad-only constraint documented |
 | #11 | `claude/ipad-admin-content-page` | ✅ merged — browser-based admin page for lesson generation |
 | #12 | `claude/use-database-url` | ✅ merged — fix DATABASE_URL env var mismatch |
-| #13 | `claude/db-diagnostic` | ✅ merged — /api/dbcheck endpoint + /api/units logging |
-| #15 | `claude/fix-units-uuid` | ✅ merged — fix UUID parameterized query returning incomplete results |
+| #13 | `claude/db-diagnostic` | ✅ merged — /api/dbcheck diagnostic endpoint |
+| #15 | `claude/fix-units-uuid` | ✅ merged — first UUID fix (column::text) |
+| #16 | `claude/post-fix-docs` | ✅ merged — documented DATABASE_URL + UUID bugs |
+| #17 | `claude/uuid-fix-and-curriculum-plan` | ✅ merged — global ::text cast + curriculum plan |
+| #18 | `claude/foundations-content` | ✅ merged — Foundations units 4-8 (25 lessons) |
+| #19-20 | `claude/pre-algebra-content` | ✅ merged — Pre-Algebra all 7 units (32 lessons) |
+| #21-22 | `claude/fix-lessons-api` | ✅ merged — dbcheck expansion + debug lessons API |
+| #23 | `claude/fix-lessons-api` | ✅ merged — **FINAL UUID fix**: switch ALL from column::text to param::uuid |
 
 ## Commit History (Chronological)
 
@@ -143,22 +152,23 @@ Migration: `lib/db/migrations/002_add_history_to_lessons.sql` — additive, `IF 
 ## Known Issues & Technical Debt
 
 ### Critical
-1. **Incomplete curriculum content**: 5 lessons seeded (3 Foundations + 1 Logarithms + 1 Exponents). The admin page at `/admin/generate-lesson` is the primary tool for scaling content — it works end-to-end from iPad.
+1. **Curriculum content progress**: Path 1 (Foundations) fully seeded — 35 lessons. Path 2 (Pre-Algebra) fully seeded — 32 lessons. Path 5 (Algebra II) has 2 lessons (Logarithms + Exponents). Paths 3, 4, 6–20 are next. Full checklist at `/docs/curriculum-plan.md` (128 units, 572 lessons total, ~67 done).
 
 ### Resolved bugs (2026-04-12 — document for prevention)
 
 **Bug 1: DATABASE_URL vs POSTGRES_URL mismatch** (PR #12)
 - **Symptom**: Newly seeded data sometimes invisible to the API despite existing in Neon
-- **Root cause**: Neon's Vercel integration sets `DATABASE_URL`. `@vercel/postgres` expects `POSTGRES_URL`. The library's fallback behavior was unreliable.
-- **Fix**: `lib/db/env.ts` maps `DATABASE_URL → POSTGRES_URL` before `@vercel/postgres` loads. ALL files import `sql` from `@/lib/db` (centralized) instead of directly from `@vercel/postgres`.
+- **Root cause**: Neon's Vercel integration sets `DATABASE_URL`. `@vercel/postgres` expects `POSTGRES_URL`.
+- **Fix**: `lib/db/env.ts` maps `DATABASE_URL → POSTGRES_URL` before `@vercel/postgres` loads. ALL files import `sql` from `@/lib/db` (centralized).
 - **Prevention rule**: NEVER import from `@vercel/postgres` directly. Always use `@/lib/db`.
 
-**Bug 2: UUID parameterized query returning incomplete results** (PR #15)
-- **Symptom**: `SELECT * FROM units WHERE path_id = ${pathId}` returned 1 row when 2 existed. A hardcoded literal query returned both rows correctly.
-- **Root cause**: `@vercel/postgres` sends parameterized values as TEXT. PostgreSQL's UUID-to-TEXT comparison via parameterized `$1` can silently drop rows depending on query planner and index usage.
-- **Fix**: Cast the UUID column to text in the WHERE clause: `WHERE path_id::text = ${pathId}`
-- **Prevention rule**: ALWAYS use `column::text = ${param}` when comparing UUID columns against parameterized string values. See CLAUDE.md "Database Connection Rules" section.
-- **Diagnostic tool**: `/api/dbcheck` endpoint (PR #13) was built to confirm the data existed in the DB — confirmed both units were present, proving the query was the issue, not the connection.
+**Bug 2: UUID parameterized query — TWO rounds of fixing** (PRs #15, #17, #23)
+- **Symptom**: Parameterized UUID comparisons silently returned incomplete results or empty arrays despite data existing in the DB.
+- **Round 1 (PR #15)**: Tried `WHERE column::text = ${param}` — worked for `/api/units` but FAILED for `/api/lessons`. The `::text` cast on the column was unreliable across different queries.
+- **Round 2 / FINAL FIX (PR #23)**: Switched to `WHERE column = ${param}::uuid` — cast the PARAMETER to UUID instead of the COLUMN to text. Proven by `/api/dbcheck` debug endpoint: `::text` returned 0 rows, `::uuid` returned 5 rows for identical data.
+- **Why `::uuid` on the parameter works**: Keeps the column in native UUID type (enables index usage). Explicitly converts the incoming TEXT parameter to UUID for type-safe comparison.
+- **Prevention rule**: ALWAYS use `column = ${param}::uuid` for UUID WHERE clauses. NEVER use `column::text = ${param}` (unreliable). NEVER use bare `column = ${param}` (also unreliable). See CLAUDE.md "Database Connection Rules" for the definitive pattern.
+- **Diagnostic tool**: `/api/dbcheck` endpoint (PRs #13, #21) was essential for confirming data existed in the DB when the API couldn't see it. Keep it until the app is stable.
 
 ### Moderate
 3. **Stripe API version mismatch**: `lib/stripe/client.ts` uses API version `2026-02-25.clover` while `app/api/subscriptions/webhook/route.ts` creates its own Stripe client with `2025-12-18.acacia`. Should use the shared client.
@@ -296,6 +306,7 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
 | Lesson page (Story + Practice) | `app/(app)/lesson/[id]/page.tsx` |
 | Learn page (DB-driven) | `app/(app)/learn/page.tsx` |
 | Story view component | `components/ui/LessonStory.tsx` |
+| Curriculum checklist | `docs/curriculum-plan.md` |
 | Env vars | `.env.local.example` |
 | PWA manifest | `public/manifest.json` |
 
@@ -325,11 +336,17 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
   - Neon's Vercel integration sets `DATABASE_URL`
   - `@vercel/postgres` expects `POSTGRES_URL`
   - Fix: `lib/db/env.ts` bridges the gap; all imports centralized to `@/lib/db`
-- **MAJOR BUG FIX**: UUID parameterized query bug (PR #15):
+- **MAJOR BUG FIX (Round 1)**: UUID parameterized query bug (PR #15):
   - `SELECT ... WHERE path_id = ${pathId}` silently returned incomplete results
-  - Fix: `WHERE path_id::text = ${pathId}` — cast UUID to text for parameterized comparison
-  - Diagnostic: built `/api/dbcheck` endpoint (PR #13) that confirmed data existed in DB but `/api/units` couldn't see it, proving the query itself was the issue
-  - This bug took PRs #12–#15 (4 PRs) to fully diagnose and fix
-- Successfully generated "Rules of Exponents" lesson via admin page and confirmed it appears in /learn → Algebra II
-- Prevention rules added to CLAUDE.md: "Database Connection Rules" section with mandatory import path and UUID casting pattern
+  - Initial fix: `WHERE path_id::text = ${pathId}` — worked for /api/units
+- Successfully generated "Rules of Exponents" lesson via admin page
 - Admin env var `ADMIN_EMAILS=sfrench71@gmail.com` configured in Vercel
+- Created full curriculum plan at `/docs/curriculum-plan.md` — 128 units, 572 lessons (PR #17)
+- Generated Foundations units 4-8 content: 25 lessons, 125 questions (PR #18)
+- Generated Pre-Algebra all 7 units: 32 lessons, 160 questions (PRs #19-20)
+- **MAJOR BUG FIX (Round 2)**: `column::text` approach proved unreliable (PR #23):
+  - `/api/lessons` returned empty despite data existing — confirmed by `/api/dbcheck` showing 5 rows
+  - Debug endpoint proved: `column::text = ${param}` returned 0 rows, `column = ${param}::uuid` returned 5 rows for identical data
+  - **FINAL FIX**: Switched ALL queries from `column::text = ${param}` to `column = ${param}::uuid`
+  - This bug took PRs #12–#23 to fully resolve. Two false fixes (no cast, then ::text) before the correct approach (::uuid on parameter) was found
+  - Prevention rules updated in CLAUDE.md with the definitive pattern
