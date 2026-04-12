@@ -1,0 +1,69 @@
+-- Pre-Algebra Unit 2: Solving Simple Equations
+-- Unit ID: 22222222-0002-0001-0001-000000000002 (already seeded)
+-- 5 lessons, 25 questions
+
+-- Lesson 1: Balancing Equations
+INSERT INTO lessons (id, unit_id, name, description, order_index, lesson_type, xp_reward, estimated_minutes, origin_year, origin_figure, history_intro) VALUES
+('33333333-0202-0001-0001-000000000001', '22222222-0002-0001-0001-000000000002', 'Balancing Equations', 'Learn why equations work like a balance scale', 1, 'tutorial', 15, 5, 1557, 'Robert Recorde',
+'{"hook":"The equals sign = is so common we barely notice it. But someone had to invent it — and the story of who and why reveals how equations actually work.","inventor":{"name":"Robert Recorde","birth_year":1510,"death_year":1558,"nationality":"Welsh","bio":"A Welsh mathematician and physician who introduced the equals sign (=) in his 1557 book The Whetstone of Witte. He chose two parallel lines because, as he wrote, ''no two things can be more equal.''"},"year_invented":1557,"etymology":{"word":"equation","from":"Latin","parts":[{"root":"aequatio","meaning":"making equal"},{"root":"aequus","meaning":"equal, level, fair"}]},"story_paragraphs":["Before Robert Recorde, mathematicians wrote ''is equal to'' in words every time they needed to show that two expressions had the same value. Imagine writing a page of algebra with that phrase repeated dozens of times — exhausting and error-prone.","In 1557, Recorde published The Whetstone of Witte, where he introduced the symbol = with the explanation: ''I will set, as I do often in work use, a pair of parallels, or Gemowe lines, of one length, thus ====, because no two things can be more equal.''","The idea behind an equation is beautifully simple: it is a balance scale. Whatever you do to one side, you must do to the other to keep it balanced. Add 5 to the left? Add 5 to the right. This principle — doing the same operation to both sides — is the foundation of solving every equation.","From simple equations like x + 3 = 7 to the most complex formulas in physics, the balance principle holds. Einstein''s E = mc² is, at its heart, a statement that two things are equal — energy and mass times the speed of light squared."],"key_contributors":[{"name":"Diophantus","contribution":"Used a symbol resembling an s for equals in 3rd-century Alexandria"},{"name":"François Viète","contribution":"Developed systematic methods for solving equations in the 1590s"},{"name":"Isaac Newton","contribution":"Extended equation-solving to calculus and physics"}],"real_world_applications":[{"name":"Balancing a Budget","icon":"💰","description":"Income = Expenses + Savings — the equals sign keeps your finances balanced"},{"name":"Chemistry","icon":"🧪","description":"Chemical equations must balance: same atoms on both sides"},{"name":"Engineering","icon":"🔧","description":"Force equations ensure bridges and buildings stay standing"},{"name":"Cooking","icon":"🍳","description":"Scaling recipes: if 2 cups serve 4, how many cups serve 8?"}],"image":{"url":null,"alt":"The Whetstone of Witte by Robert Recorde","attribution":"Wikimedia Commons, public domain","source_url":null}}'::jsonb)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO questions (id, lesson_id, question_type, difficulty, question_text, question_latex, options, correct_answer, explanation, hint, xp_value, order_index) VALUES
+('44444444-0202-0001-0001-000000000001', '33333333-0202-0001-0001-000000000001', 'multiple_choice', 'easy', 'Who invented the equals sign (=)?', NULL, '[{"id":"a","text":"Isaac Newton"},{"id":"b","text":"Pythagoras"},{"id":"c","text":"Robert Recorde"},{"id":"d","text":"Albert Einstein"}]'::jsonb, '"c"'::jsonb, 'Robert Recorde, a Welsh mathematician, introduced = in 1557 because he felt ''no two things can be more equal'' than two parallel lines.', 'He was Welsh and lived in the 1500s', 5, 1),
+('44444444-0202-0001-0001-000000000002', '33333333-0202-0001-0001-000000000001', 'fill_in_blank', 'easy', 'Solve: x + 3 = 10. What is x?', 'x + 3 = 10', NULL, '"7"'::jsonb, 'Subtract 3 from both sides: x = 10 - 3 = 7. Check: 7 + 3 = 10 ✓', 'To undo adding 3, subtract 3 from both sides', 5, 2),
+('44444444-0202-0001-0001-000000000003', '33333333-0202-0001-0001-000000000001', 'true_false', 'easy', 'True or False: If you add 5 to one side of an equation, you must add 5 to the other side to keep it balanced.', NULL, '[{"id":"true","text":"True"},{"id":"false","text":"False"}]'::jsonb, '"true"'::jsonb, 'True! An equation is like a balance scale. Whatever you do to one side, you must do to the other.', 'Think about what keeps a scale balanced', 5, 3),
+('44444444-0202-0001-0001-000000000004', '33333333-0202-0001-0001-000000000001', 'fill_in_blank', 'easy', 'Solve: n - 5 = 8. What is n?', 'n - 5 = 8', NULL, '"13"'::jsonb, 'Add 5 to both sides: n = 8 + 5 = 13. Check: 13 - 5 = 8 ✓', 'To undo subtracting 5, add 5 to both sides', 5, 4),
+('44444444-0202-0001-0001-000000000005', '33333333-0202-0001-0001-000000000001', 'multiple_choice', 'easy', 'What is the first step to solve 2x = 14?', NULL, '[{"id":"a","text":"Add 2 to both sides"},{"id":"b","text":"Subtract 2 from both sides"},{"id":"c","text":"Divide both sides by 2"},{"id":"d","text":"Multiply both sides by 2"}]'::jsonb, '"c"'::jsonb, '2x means 2 times x. To undo multiplication by 2, divide both sides by 2: x = 14 ÷ 2 = 7.', 'To undo multiplication, use the opposite operation', 5, 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Lesson 2: One-Step Equations
+INSERT INTO lessons (id, unit_id, name, description, order_index, lesson_type, xp_reward, estimated_minutes) VALUES
+('33333333-0202-0001-0001-000000000002', '22222222-0002-0001-0001-000000000002', 'One-Step Equations', 'Solve equations with a single operation', 2, 'practice', 10, 5)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO questions (id, lesson_id, question_type, difficulty, question_text, question_latex, options, correct_answer, explanation, hint, xp_value, order_index) VALUES
+('44444444-0202-0002-0001-000000000001', '33333333-0202-0001-0001-000000000002', 'fill_in_blank', 'easy', 'Solve: x + 9 = 15', 'x + 9 = 15', NULL, '"6"'::jsonb, 'Subtract 9 from both sides: x = 15 - 9 = 6.', 'Undo the +9 by subtracting 9', 5, 1),
+('44444444-0202-0002-0001-000000000002', '33333333-0202-0001-0001-000000000002', 'fill_in_blank', 'easy', 'Solve: y - 4 = 11', 'y - 4 = 11', NULL, '"15"'::jsonb, 'Add 4 to both sides: y = 11 + 4 = 15.', 'Undo the -4 by adding 4', 5, 2),
+('44444444-0202-0002-0001-000000000003', '33333333-0202-0001-0001-000000000002', 'fill_in_blank', 'easy', 'Solve: 5n = 35', '5n = 35', NULL, '"7"'::jsonb, 'Divide both sides by 5: n = 35 ÷ 5 = 7.', 'Undo multiplication by dividing', 5, 3),
+('44444444-0202-0002-0001-000000000004', '33333333-0202-0001-0001-000000000002', 'fill_in_blank', 'easy', 'Solve: m / 3 = 4', 'm / 3 = 4', NULL, '"12"'::jsonb, 'Multiply both sides by 3: m = 4 × 3 = 12.', 'Undo division by multiplying', 5, 4),
+('44444444-0202-0002-0001-000000000005', '33333333-0202-0001-0001-000000000002', 'fill_in_blank', 'easy', 'Solve: x + 2.5 = 7', 'x + 2.5 = 7', NULL, '"4.5"'::jsonb, 'Subtract 2.5 from both sides: x = 7 - 2.5 = 4.5. Equations work with decimals too!', 'Same method — subtract 2.5 from both sides', 5, 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Lesson 3: Two-Step Equations
+INSERT INTO lessons (id, unit_id, name, description, order_index, lesson_type, xp_reward, estimated_minutes) VALUES
+('33333333-0202-0001-0001-000000000003', '22222222-0002-0001-0001-000000000002', 'Two-Step Equations', 'Solve equations that need two operations', 3, 'practice', 10, 5)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO questions (id, lesson_id, question_type, difficulty, question_text, question_latex, options, correct_answer, explanation, hint, xp_value, order_index) VALUES
+('44444444-0202-0003-0001-000000000001', '33333333-0202-0001-0001-000000000003', 'fill_in_blank', 'easy', 'Solve: 2x + 3 = 11. What is x?', '2x + 3 = 11', NULL, '"4"'::jsonb, 'Step 1: Subtract 3 from both sides → 2x = 8. Step 2: Divide by 2 → x = 4.', 'Undo addition first, then undo multiplication', 5, 1),
+('44444444-0202-0003-0001-000000000002', '33333333-0202-0001-0001-000000000003', 'fill_in_blank', 'easy', 'Solve: 3n - 5 = 10. What is n?', '3n - 5 = 10', NULL, '"5"'::jsonb, 'Step 1: Add 5 → 3n = 15. Step 2: Divide by 3 → n = 5.', 'Add 5 first, then divide by 3', 5, 2),
+('44444444-0202-0003-0001-000000000003', '33333333-0202-0001-0001-000000000003', 'multiple_choice', 'easy', 'What is the first step to solve 4x + 7 = 31?', NULL, '[{"id":"a","text":"Divide by 4"},{"id":"b","text":"Subtract 7"},{"id":"c","text":"Add 7"},{"id":"d","text":"Multiply by 4"}]'::jsonb, '"b"'::jsonb, 'In a two-step equation, undo addition/subtraction FIRST, then undo multiplication/division. Subtract 7 from both sides.', 'Undo operations in reverse order — deal with the +7 before the 4x', 5, 3),
+('44444444-0202-0003-0001-000000000004', '33333333-0202-0001-0001-000000000003', 'fill_in_blank', 'easy', 'Solve: x/4 + 2 = 5. What is x?', 'x/4 + 2 = 5', NULL, '"12"'::jsonb, 'Step 1: Subtract 2 → x/4 = 3. Step 2: Multiply by 4 → x = 12.', 'Subtract 2 first, then multiply by 4', 5, 4),
+('44444444-0202-0003-0001-000000000005', '33333333-0202-0001-0001-000000000003', 'fill_in_blank', 'medium', 'Solve: 5y - 8 = 22. What is y?', '5y - 8 = 22', NULL, '"6"'::jsonb, 'Add 8: 5y = 30. Divide by 5: y = 6.', 'Two steps: add 8, then divide by 5', 10, 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Lesson 4: Equations with Negatives
+INSERT INTO lessons (id, unit_id, name, description, order_index, lesson_type, xp_reward, estimated_minutes) VALUES
+('33333333-0202-0001-0001-000000000004', '22222222-0002-0001-0001-000000000002', 'Equations with Negatives', 'Solve equations involving negative numbers', 4, 'practice', 10, 5)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO questions (id, lesson_id, question_type, difficulty, question_text, question_latex, options, correct_answer, explanation, hint, xp_value, order_index) VALUES
+('44444444-0202-0004-0001-000000000001', '33333333-0202-0001-0001-000000000004', 'fill_in_blank', 'easy', 'Solve: x + (-3) = 5. What is x?', 'x + (-3) = 5', NULL, '"8"'::jsonb, 'Adding -3 is the same as subtracting 3. So x - 3 = 5, which gives x = 8.', 'Adding a negative is the same as subtracting', 5, 1),
+('44444444-0202-0004-0001-000000000002', '33333333-0202-0001-0001-000000000004', 'fill_in_blank', 'easy', 'Solve: -2x = 10. What is x?', '-2x = 10', NULL, '"-5"'::jsonb, 'Divide both sides by -2: x = 10 ÷ (-2) = -5. A positive divided by a negative gives a negative.', 'Divide both sides by -2', 5, 2),
+('44444444-0202-0004-0001-000000000003', '33333333-0202-0001-0001-000000000004', 'fill_in_blank', 'easy', 'Solve: n - (-4) = 9. What is n?', 'n - (-4) = 9', NULL, '"5"'::jsonb, 'Subtracting -4 is the same as adding 4. So n + 4 = 9, giving n = 5.', 'Subtracting a negative is adding', 5, 3),
+('44444444-0202-0004-0001-000000000004', '33333333-0202-0001-0001-000000000004', 'multiple_choice', 'easy', 'What is the solution to -x = 7?', NULL, '[{"id":"a","text":"x = 7"},{"id":"b","text":"x = -7"},{"id":"c","text":"x = 1/7"},{"id":"d","text":"x = 0"}]'::jsonb, '"b"'::jsonb, '-x = 7 means "negative x equals 7." Multiply both sides by -1: x = -7. Check: -(-7) = 7 ✓', 'Multiply both sides by -1', 5, 4),
+('44444444-0202-0004-0001-000000000005', '33333333-0202-0001-0001-000000000004', 'fill_in_blank', 'medium', 'Solve: -3x + 4 = -8. What is x?', '-3x + 4 = -8', NULL, '"4"'::jsonb, 'Subtract 4: -3x = -12. Divide by -3: x = -12 ÷ -3 = 4. Negative divided by negative = positive!', 'Subtract 4 from both sides first', 10, 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Lesson 5: Equations Boss
+INSERT INTO lessons (id, unit_id, name, description, order_index, lesson_type, xp_reward, estimated_minutes) VALUES
+('33333333-0202-0001-0001-000000000005', '22222222-0002-0001-0001-000000000002', 'Equations Boss Round', 'Prove your equation-solving skills!', 5, 'boss_round', 25, 5)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO questions (id, lesson_id, question_type, difficulty, question_text, question_latex, options, correct_answer, explanation, hint, xp_value, order_index) VALUES
+('44444444-0202-0005-0001-000000000001', '33333333-0202-0001-0001-000000000005', 'fill_in_blank', 'medium', 'Solve: 7x - 3 = 25. What is x?', '7x - 3 = 25', NULL, '"4"'::jsonb, 'Add 3: 7x = 28. Divide by 7: x = 4.', 'Two-step: add, then divide', 10, 1),
+('44444444-0202-0005-0001-000000000002', '33333333-0202-0001-0001-000000000005', 'fill_in_blank', 'medium', 'Solve: x/5 - 2 = 6. What is x?', 'x/5 - 2 = 6', NULL, '"40"'::jsonb, 'Add 2: x/5 = 8. Multiply by 5: x = 40.', 'Add 2 first, then multiply by 5', 10, 2),
+('44444444-0202-0005-0001-000000000003', '33333333-0202-0001-0001-000000000005', 'fill_in_blank', 'medium', 'Solve: -4n + 10 = -6. What is n?', '-4n + 10 = -6', NULL, '"4"'::jsonb, 'Subtract 10: -4n = -16. Divide by -4: n = 4.', 'Subtract 10 from both sides first', 10, 3),
+('44444444-0202-0005-0001-000000000004', '33333333-0202-0001-0001-000000000005', 'true_false', 'medium', 'True or False: The equation 3x + 5 = 3x + 8 has no solution.', NULL, '[{"id":"true","text":"True"},{"id":"false","text":"False"}]'::jsonb, '"true"'::jsonb, 'True! Subtract 3x from both sides and you get 5 = 8, which is never true. No value of x can make this equation work.', 'Try subtracting 3x from both sides and see what happens', 10, 4),
+('44444444-0202-0005-0001-000000000005', '33333333-0202-0001-0001-000000000005', 'multiple_choice', 'medium', 'In what year was the equals sign (=) invented?', NULL, '[{"id":"a","text":"1492"},{"id":"b","text":"1557"},{"id":"c","text":"1637"},{"id":"d","text":"1776"}]'::jsonb, '"b"'::jsonb, 'Robert Recorde introduced = in 1557 in The Whetstone of Witte. He chose parallel lines because "no two things can be more equal."', 'It was during the Tudor period in England', 10, 5)
+ON CONFLICT (id) DO NOTHING;
