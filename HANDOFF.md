@@ -1,6 +1,6 @@
 # HANDOFF.md - Mathly Project Status & Handoff
 
-> **Last updated**: 2026-04-11 (iPad constraint captured + v0.5 pipeline flagged as needing redesign)
+> **Last updated**: 2026-04-12 (DATABASE_URL + UUID bug fixed, admin content page shipped, full content pipeline working end-to-end)
 > **Read before** starting any new session, alongside CLAUDE.md and SAFETY-RULES.md.
 
 ## ⚠️ CRITICAL: Developer environment is iPad-only
@@ -12,7 +12,7 @@ Quick summary:
 - ❌ Cannot use: terminal, npm/node commands, local dev server, git CLI, local env vars, SSH, local editors
 - 🚫 **Never propose local CLI scripts.** Redesign every workflow as: server-side API route + browser UI inside the Mathly app, or GitHub Actions triggered from the web UI.
 
-**Known violation**: `scripts/generate-lesson.mjs` (shipped in v0.5) requires a local terminal to run. It is **not usable by the owner**. A browser-based replacement is the next priority — see "Next Steps P0" below.
+**Known violation (resolved)**: `scripts/generate-lesson.mjs` (shipped in v0.5) requires a local terminal. Replaced by `/admin/generate-lesson` page + `/api/admin/generate-lesson` route (shipped v0.6, PR #11). CLI script remains in repo as alternative for contributors with terminals.
 
 ## Project Overview
 Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 paths from counting to unsolved problems. Built with Next.js 14.2, Neon Postgres, NextAuth.js, Stripe, and Anthropic Claude AI.
@@ -38,7 +38,12 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 | `v0.3.1-2026-04-11` | 2026-04-11 | HANDOFF post-pilot refresh (docs-only) |
 | `v0.3.2-2026-04-11` | 2026-04-11 | Footer year fix + Vercel redeploy trigger |
 | `v0.4-2026-04-11` | 2026-04-11 | Learn page DB integration — /api/paths + /api/units + dynamic Learn page |
-| `v0.5-2026-04-11` | 2026-04-11 | Content generation pipeline (CLI — ⚠️ not iPad-usable, pending redesign) |
+| `v0.5-2026-04-11` | 2026-04-11 | Content generation pipeline (CLI — kept for contributors with terminals) |
+| `v0.5.1-2026-04-11` | 2026-04-11 | iPad environment constraint documented |
+| `v0.6-2026-04-11` | 2026-04-11 | iPad-friendly admin content generation page |
+| `v0.7-2026-04-12` | 2026-04-12 | Fix DATABASE_URL env var mismatch (Neon uses DATABASE_URL, not POSTGRES_URL) |
+| `v0.7.1-2026-04-12` | 2026-04-12 | Diagnostic endpoint /api/dbcheck + logging |
+| `v0.7.2-2026-04-12` | 2026-04-12 | Fix UUID parameterized query bug in /api/units |
 
 ## Pull Request History
 
@@ -52,7 +57,12 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 | #6 | `claude/update-handoff-post-pilot` | ✅ merged — HANDOFF refresh |
 | #7 | `claude/fix-footer-year` | ✅ merged — footer 2024→2026 + Vercel redeploy trigger |
 | #8 | `claude/learn-page-db-integration` | ✅ merged — /api/paths + /api/units + DB-driven Learn page |
-| #9 | `claude/content-generation-pipeline` | ✅ merged — CLI generator (⚠️ not usable on iPad — redesign pending) |
+| #9 | `claude/content-generation-pipeline` | ✅ merged — CLI generator (kept for terminal users) |
+| #10 | `claude/ipad-constraint-docs` | ✅ merged — iPad-only constraint documented in CLAUDE.md + HANDOFF.md |
+| #11 | `claude/ipad-admin-content-page` | ✅ merged — browser-based admin page for lesson generation |
+| #12 | `claude/use-database-url` | ✅ merged — fix DATABASE_URL env var mismatch |
+| #13 | `claude/db-diagnostic` | ✅ merged — /api/dbcheck endpoint + /api/units logging |
+| #15 | `claude/fix-units-uuid` | ✅ merged — fix UUID parameterized query returning incomplete results |
 
 ## Commit History (Chronological)
 
@@ -96,7 +106,9 @@ Mathly is a gamified mathematics learning PWA ("Duolingo for math") covering 20 
 ### Partially Implemented
 - **Euler's Mind AI chat**: API route works, UI exists, but requires ANTHROPIC_API_KEY and user must have `ai_agent_unlocked = true`
 - **Stripe payments**: Checkout flow works, but requires full Stripe configuration (secret key, publishable key, webhook secret, 4 price IDs)
-- **Lesson content**: The lesson page (`/lesson/[id]`) now works with real DB content for any lesson that has questions. Only 4 lessons total are seeded (3 Foundations lessons + 1 new Logarithms lesson). Paths 3, 4, 6–20 still have no units, lessons, or questions seeded.
+- **Lesson content**: The lesson page (`/lesson/[id]`) now works with real DB content. 5 lessons seeded (3 Foundations + 1 Logarithms + 1 Rules of Exponents). Most paths still need content generated via the admin page.
+- **Content generation (iPad)**: `/admin/generate-lesson` page works end-to-end — fill form → Claude generates → copy SQL → paste in Neon → lesson appears on /learn. Auth gated by `ADMIN_EMAILS` env var.
+- **Learn page**: Now fully DB-driven (PR #8). All seeded units/lessons appear automatically. No hardcoded curriculum data.
 
 ## Content Model (after pilot)
 
@@ -131,8 +143,22 @@ Migration: `lib/db/migrations/002_add_history_to_lessons.sql` — additive, `IF 
 ## Known Issues & Technical Debt
 
 ### Critical
-1. **Incomplete curriculum content**: Only 4 lessons total are seeded out of thousands needed across 20 paths. The logarithms pilot is the template — now we need to scale it.
-2. **No content generation pipeline yet**: Next planned work. Should be a script (not a runtime feature) that uses Claude API to generate draft lessons + questions + history_intro, writes to a staging table for human review, then promotes to live.
+1. **Incomplete curriculum content**: 5 lessons seeded (3 Foundations + 1 Logarithms + 1 Exponents). The admin page at `/admin/generate-lesson` is the primary tool for scaling content — it works end-to-end from iPad.
+
+### Resolved bugs (2026-04-12 — document for prevention)
+
+**Bug 1: DATABASE_URL vs POSTGRES_URL mismatch** (PR #12)
+- **Symptom**: Newly seeded data sometimes invisible to the API despite existing in Neon
+- **Root cause**: Neon's Vercel integration sets `DATABASE_URL`. `@vercel/postgres` expects `POSTGRES_URL`. The library's fallback behavior was unreliable.
+- **Fix**: `lib/db/env.ts` maps `DATABASE_URL → POSTGRES_URL` before `@vercel/postgres` loads. ALL files import `sql` from `@/lib/db` (centralized) instead of directly from `@vercel/postgres`.
+- **Prevention rule**: NEVER import from `@vercel/postgres` directly. Always use `@/lib/db`.
+
+**Bug 2: UUID parameterized query returning incomplete results** (PR #15)
+- **Symptom**: `SELECT * FROM units WHERE path_id = ${pathId}` returned 1 row when 2 existed. A hardcoded literal query returned both rows correctly.
+- **Root cause**: `@vercel/postgres` sends parameterized values as TEXT. PostgreSQL's UUID-to-TEXT comparison via parameterized `$1` can silently drop rows depending on query planner and index usage.
+- **Fix**: Cast the UUID column to text in the WHERE clause: `WHERE path_id::text = ${pathId}`
+- **Prevention rule**: ALWAYS use `column::text = ${param}` when comparing UUID columns against parameterized string values. See CLAUDE.md "Database Connection Rules" section.
+- **Diagnostic tool**: `/api/dbcheck` endpoint (PR #13) was built to confirm the data existed in the DB — confirmed both units were present, proving the query was the issue, not the connection.
 
 ### Moderate
 3. **Stripe API version mismatch**: `lib/stripe/client.ts` uses API version `2026-02-25.clover` while `app/api/subscriptions/webhook/route.ts` creates its own Stripe client with `2025-12-18.acacia`. Should use the shared client.
@@ -141,8 +167,8 @@ Migration: `lib/db/migrations/002_add_history_to_lessons.sql` — additive, `IF 
 6. **Legacy Supabase directory**: `supabase/migrations/001_initial_schema.sql` is outdated (references Supabase auth). Active schema is `lib/db/schema.sql`. The `supabase/` directory is kept for seed files only (`seed.sql`, `seed-logarithms.sql`).
 7. **No middleware/route protection**: There is no Next.js middleware to redirect unauthenticated users. Auth is checked per-API-route only.
 8. **No email verification**: Signup accepts any email without verification.
-9. **Footer copyright year**: Landing page shows "2024" — should be dynamic or updated.
-10. **Learn page navigation to real lesson IDs**: The `/learn` page currently links to lessons. Need to verify it surfaces the new Logarithms unit under Algebra II (or whether that path is gated/locked).
+9. ~~**Footer copyright year**~~: Fixed in PR #7 (2024 → 2026).
+10. ~~**Learn page navigation**~~: Fixed in PR #8 — Learn page is now fully DB-driven. All seeded content appears automatically.
 
 ### Minor
 11. **No tests**: Zero test files. No unit, integration, or e2e tests.
@@ -213,18 +239,11 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
 
 ## Next Steps (Recommended Priority)
 
-### P0 — iPad-friendly content generation (blocks all content work)
-1. **`claude/ipad-admin-content-page`** — Replace the local CLI generator shipped in v0.5 with a browser-based equivalent the iPad owner can actually use. Proposed shape:
-   - New `POST /api/admin/generate-lesson` route that accepts an outline JSON body, calls Claude server-side using the existing Vercel `ANTHROPIC_API_KEY`, returns the generated SQL as plain text in the response
-   - New `/admin/generate-lesson` page in the Mathly app with a form (path, unit, lesson name, brief, question count), a "Generate" button, and a scrollable output panel with a "Copy SQL" button
-   - Auth: email allowlist via `ADMIN_EMAILS` Vercel env var (checked against session.user.email). Only the owner can call the endpoint.
-   - Reuses the prompt template from `scripts/prompts/generate-lesson-system.md` — that file stays as the single source of truth
-   - **After this ships**, the owner can: open the admin page in Safari, paste an outline, click Generate, copy the SQL, switch to Neon Console, paste and run, refresh /learn
-   - The existing `scripts/generate-lesson.mjs` can stay in the repo as a CLI alternative for future contributors with terminals, but it is no longer the primary path
-
-### P0 — Content scaling (blocked until above ships)
-2. **`claude/algebra-ii-remaining-units`** — Once the admin page works, seed the rest of Algebra II units (complex numbers, polynomials, advanced functions) using the browser-based generator. Validates the template on multiple lessons in the same path.
-3. **`claude/content-policy`** — Add `CONTENT-POLICY.md` documenting approved image sources (Wikimedia, Pexels, Pixabay, Library of Congress, NASA), attribution rules, and a "link don't copy" rule for MacTutor/Mathigon.
+### P0 — Content scaling (admin page is shipped and working)
+1. **Generate more lessons** — Use `/admin/generate-lesson` to fill out Algebra II (remaining units: complex numbers, polynomials, advanced functions), then expand to other paths. The pipeline is: fill form → generate → copy SQL → paste in Neon → lesson appears on /learn.
+2. **Apply UUID text-cast fix to other API routes** — The `path_id::text = ${param}` fix was applied to `/api/units` (PR #15). Other routes that filter by UUID columns (`/api/lessons`, `/api/progress`, `/api/friends`, etc.) should be audited and fixed the same way to prevent the same bug.
+3. **Remove diagnostic endpoint** — `/api/dbcheck` was built for debugging. Remove it once stable.
+4. **`claude/content-policy`** — Add `CONTENT-POLICY.md` documenting approved image sources (Wikimedia, Pexels, Pixabay, Library of Congress, NASA), attribution rules, and a "link don't copy" rule for MacTutor/Mathigon.
 
 ### P1 — Core features
 4. Add Next.js middleware for route protection (redirect to /login if unauthenticated)
@@ -257,17 +276,25 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
 | Project guide | `CLAUDE.md` |
 | Session memory (this file) | `HANDOFF.md` |
 | Safety protocol | `SAFETY-RULES.md` |
+| DB env var bridge (MUST import) | `lib/db/env.ts` |
+| Central DB export (import sql from here) | `lib/db/index.ts` |
+| All DB query functions | `lib/db/database.ts` |
 | DB schema | `lib/db/schema.sql` |
 | DB migrations | `lib/db/migrations/` |
-| All DB queries | `lib/db/database.ts` |
 | Auth config | `lib/auth/config.ts` |
 | Stripe config | `lib/stripe/client.ts` |
 | AI config | `lib/anthropic/client.ts` |
+| Content generator prompt | `lib/content-generator/system-prompt.ts` |
 | Types | `lib/types.ts` |
 | State store | `store/useStore.ts` |
 | Base seed data | `supabase/seed.sql` |
 | Logarithms pilot seed | `supabase/seed-logarithms.sql` |
+| Generated seeds | `supabase/generated/` |
+| Admin content page | `app/(app)/admin/generate-lesson/page.tsx` |
+| Admin content API | `app/api/admin/generate-lesson/route.ts` |
+| Diagnostic endpoint | `app/api/dbcheck/route.ts` (temporary — remove when stable) |
 | Lesson page (Story + Practice) | `app/(app)/lesson/[id]/page.tsx` |
+| Learn page (DB-driven) | `app/(app)/learn/page.tsx` |
 | Story view component | `components/ui/LessonStory.tsx` |
 | Env vars | `.env.local.example` |
 | PWA manifest | `public/manifest.json` |
@@ -284,5 +311,25 @@ STRIPE_PRICE_FAMILY_ANNUAL=<stripe-price-id>
   - New `supabase/seed-logarithms.sql` with 1 unit + 1 lesson + 5 questions + full history_intro
   - New `components/ui/LessonStory.tsx` presentational component
   - Lesson page now fetches real DB content with silent fallback to demo
-- Established mandatory tag-release format for every session's PR (semver `v<major>.<minor>-<YYYY-MM-DD>`)
-- Deferred: age-tiered content, dedicated history path, normalized mathematicians table, bulk content generation
+- Established mandatory tag-release format for every session's PR
+- Deferred: age-tiered content, dedicated history path, normalized mathematicians table
+
+### 2026-04-11/12 — Content pipeline + DB fix session
+- Documented iPad-only developer environment constraint (PR #10)
+- Shipped DB-driven Learn page (PR #8) — replaces 55-line hardcoded array with /api/paths + /api/units fetches
+- Shipped CLI content generation pipeline (PR #9) — kept for terminal users
+- Shipped iPad-friendly admin page (PR #11) — `/admin/generate-lesson` with form + Claude API + Copy SQL button
+- Fixed Vercel Git integration (reconnected after branch rename broke webhook)
+- Fixed footer year 2024→2026 (PR #7)
+- **MAJOR BUG FIX**: DATABASE_URL vs POSTGRES_URL mismatch (PR #12):
+  - Neon's Vercel integration sets `DATABASE_URL`
+  - `@vercel/postgres` expects `POSTGRES_URL`
+  - Fix: `lib/db/env.ts` bridges the gap; all imports centralized to `@/lib/db`
+- **MAJOR BUG FIX**: UUID parameterized query bug (PR #15):
+  - `SELECT ... WHERE path_id = ${pathId}` silently returned incomplete results
+  - Fix: `WHERE path_id::text = ${pathId}` — cast UUID to text for parameterized comparison
+  - Diagnostic: built `/api/dbcheck` endpoint (PR #13) that confirmed data existed in DB but `/api/units` couldn't see it, proving the query itself was the issue
+  - This bug took PRs #12–#15 (4 PRs) to fully diagnose and fix
+- Successfully generated "Rules of Exponents" lesson via admin page and confirmed it appears in /learn → Algebra II
+- Prevention rules added to CLAUDE.md: "Database Connection Rules" section with mandatory import path and UUID casting pattern
+- Admin env var `ADMIN_EMAILS=sfrench71@gmail.com` configured in Vercel
