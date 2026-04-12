@@ -45,8 +45,8 @@ export async function POST(request: Request) {
           ? new Date(sub.current_period_end * 1000).toISOString()
           : new Date(Date.now() + 30 * 86400000).toISOString();
 
-        await sql`UPDATE users SET subscription_tier = ${tier}, subscription_expires_at = ${expiresAt} WHERE id = ${userId}`;
-        await sql`UPDATE hearts SET unlimited_until = ${expiresAt} WHERE user_id = ${userId}`;
+        await sql`UPDATE users SET subscription_tier = ${tier}, subscription_expires_at = ${expiresAt} WHERE id::text = ${userId}`;
+        await sql`UPDATE hearts SET unlimited_until = ${expiresAt} WHERE user_id::text = ${userId}`;
       }
       break;
     }
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
       const userId = sub.metadata?.userId;
 
       if (userId) {
-        await sql`UPDATE users SET subscription_tier = 'free', subscription_expires_at = NULL WHERE id = ${userId}`;
-        await sql`UPDATE hearts SET unlimited_until = NULL WHERE user_id = ${userId}`;
+        await sql`UPDATE users SET subscription_tier = 'free', subscription_expires_at = NULL WHERE id::text = ${userId}`;
+        await sql`UPDATE hearts SET unlimited_until = NULL WHERE user_id::text = ${userId}`;
       }
       break;
     }

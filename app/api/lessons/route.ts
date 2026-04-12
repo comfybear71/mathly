@@ -10,13 +10,13 @@ export async function GET(request: Request) {
     const unitId = searchParams.get('unit_id');
 
     if (lessonId) {
-      const { rows: lessons } = await sql`SELECT * FROM lessons WHERE id = ${lessonId}`;
-      const { rows: questions } = await sql`SELECT * FROM questions WHERE lesson_id = ${lessonId} ORDER BY order_index`;
+      const { rows: lessons } = await sql`SELECT * FROM lessons WHERE id::text = ${lessonId}`;
+      const { rows: questions } = await sql`SELECT * FROM questions WHERE lesson_id::text = ${lessonId} ORDER BY order_index`;
       return NextResponse.json({ lesson: lessons[0] || null, questions });
     }
 
     if (unitId) {
-      const { rows: lessons } = await sql`SELECT * FROM lessons WHERE unit_id = ${unitId} ORDER BY order_index`;
+      const { rows: lessons } = await sql`SELECT * FROM lessons WHERE unit_id::text = ${unitId} ORDER BY order_index`;
       return NextResponse.json({ lessons });
     }
 
