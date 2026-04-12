@@ -10,7 +10,7 @@ export async function GET() {
     }
 
     const { rows } = await sql`
-      SELECT * FROM notifications WHERE user_id = ${session.user.id}
+      SELECT * FROM notifications WHERE user_id::text = ${session.user.id}
       ORDER BY created_at DESC LIMIT 50
     `;
 
@@ -31,9 +31,9 @@ export async function PATCH(request: Request) {
     const { action, notificationId } = await request.json();
 
     if (action === 'read_all') {
-      await sql`UPDATE notifications SET read = true WHERE user_id = ${session.user.id} AND read = false`;
+      await sql`UPDATE notifications SET read = true WHERE user_id::text = ${session.user.id} AND read = false`;
     } else if (action === 'read' && notificationId) {
-      await sql`UPDATE notifications SET read = true WHERE id = ${notificationId} AND user_id = ${session.user.id}`;
+      await sql`UPDATE notifications SET read = true WHERE id::text = ${notificationId} AND user_id::text = ${session.user.id}`;
     }
 
     return NextResponse.json({ success: true });
