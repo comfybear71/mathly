@@ -31,39 +31,39 @@
 - [x] Multiply & Divide Boss (boss_round)
 
 ### Unit 4: Fractions & Decimals
-- [ ] What is a Fraction? — history of Egyptian fractions (tutorial)
-- [ ] Comparing Fractions (practice)
-- [ ] Adding & Subtracting Fractions (practice)
-- [ ] Introduction to Decimals — Simon Stevin 1585 (tutorial)
-- [ ] Converting Fractions & Decimals (practice)
-- [ ] Fractions & Decimals Boss (boss_round)
+- [x] What is a Fraction? — history of Egyptian fractions (tutorial)
+- [x] Comparing Fractions (practice)
+- [x] Adding & Subtracting Fractions (practice)
+- [x] Introduction to Decimals — Simon Stevin 1585 (tutorial)
+- [x] Converting Fractions & Decimals (practice)
+- [x] Fractions & Decimals Boss (boss_round)
 
 ### Unit 5: Percentages
-- [ ] What is a Percentage? — origin in Roman tax systems (tutorial)
-- [ ] Finding Percentages of Numbers (practice)
-- [ ] Percentage Increase & Decrease (practice)
-- [ ] Real-World Percentages (practice)
-- [ ] Percentages Boss (boss_round)
+- [x] What is a Percentage? — origin in Roman tax systems (tutorial)
+- [x] Finding Percentages of Numbers (practice)
+- [x] Percentage Increase & Decrease (practice)
+- [x] Real-World Percentages (practice)
+- [x] Percentages Boss (boss_round)
 
 ### Unit 6: Negative Numbers
-- [ ] Below Zero — history of negative numbers in China & India (tutorial)
-- [ ] Adding & Subtracting Negatives (practice)
-- [ ] Multiplying & Dividing Negatives (practice)
-- [ ] Number Line Mastery (practice)
-- [ ] Negative Numbers Boss (boss_round)
+- [x] Below Zero — history of negative numbers in China & India (tutorial)
+- [x] Adding & Subtracting Negatives (practice)
+- [x] Multiplying & Dividing Negatives (practice)
+- [x] Number Line Mastery (practice)
+- [x] Negative Numbers Boss (boss_round)
 
 ### Unit 7: Order of Operations
-- [ ] Why BODMAS/PEMDAS? — the need for mathematical agreement (tutorial)
-- [ ] Brackets & Parentheses (practice)
-- [ ] Mixed Operations (practice)
-- [ ] Order of Operations Boss (boss_round)
+- [x] Why BODMAS/PEMDAS? — the need for mathematical agreement (tutorial)
+- [x] Brackets & Parentheses (practice)
+- [x] Mixed Operations (practice)
+- [x] Order of Operations Boss (boss_round)
 
 ### Unit 8: Basic Word Problems
-- [ ] Translating Words to Math (tutorial)
-- [ ] Addition & Subtraction Word Problems (practice)
-- [ ] Multiplication & Division Word Problems (practice)
-- [ ] Mixed Word Problems (practice)
-- [ ] Word Problems Boss (boss_round)
+- [X] Translating Words to Math (tutorial)
+- [X] Addition & Subtraction Word Problems (practice)
+- [X] Multiplication & Division Word Problems (practice)
+- [X] Mixed Word Problems (practice)
+- [X] Word Problems Boss (boss_round)
 
 ---
 
