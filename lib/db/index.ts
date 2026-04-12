@@ -1,3 +1,5 @@
+// Map Neon's DATABASE_URL to POSTGRES_URL before @vercel/postgres loads.
+import './env';
 import { sql } from '@vercel/postgres';
 
 export { sql };

@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db';
 import type {
   User, CurriculumPath, Unit, Lesson, Question,
   UserProgress, UserPathProgress, LeaderboardEntry,

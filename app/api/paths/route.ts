@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db';
 
 // GET /api/paths — returns all curriculum paths ordered by order_index.
 // Public endpoint (no auth check) — the path list is not user-specific.

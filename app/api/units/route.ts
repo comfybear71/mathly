@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db';
 
 // GET /api/units?path_id=<uuid> — returns units for the given path,
 // ordered by order_index. Public endpoint (no auth check).
