@@ -76,7 +76,41 @@ Mathly is a gamified mathematics learning PWA (Progressive Web App) — think "D
 
 ### Known violations to fix (as of this writing)
 
-- **`scripts/generate-lesson.mjs` (v0.5)** — requires `npm run generate-lesson` locally. Not usable by the owner. Must be replaced with a `/api/admin/generate-lesson` route + `/admin/generate-lesson` page before the content pipeline is actually usable.
+- **`scripts/generate-lesson.mjs` (v0.5)** — requires `npm run generate-lesson` locally. Not usable by the owner. Replaced by `/api/admin/generate-lesson` route + `/admin/generate-lesson` page (shipped v0.6). The CLI script remains as an alternative for contributors with terminals.
+
+---
+
+## ⚠️ Database Connection Rules — READ BEFORE WRITING ANY SQL QUERIES
+
+### Neon env var naming
+Neon's Vercel integration sets `DATABASE_URL`, **not** `POSTGRES_URL`. The `@vercel/postgres` library expects `POSTGRES_URL`. The file `lib/db/env.ts` bridges this gap by mapping `DATABASE_URL → POSTGRES_URL` at module load time.
+
+**MANDATORY**: Every file that queries the database MUST import `sql` from `@/lib/db`, NEVER directly from `@vercel/postgres`. The centralized import ensures the env var mapping runs before any query.
+
+```ts
+// ✅ CORRECT — always do this
+import { sql } from '@/lib/db';
+
+// ❌ WRONG — bypasses env var mapping, will fail silently
+import { sql } from '@vercel/postgres';
+```
+
+### UUID parameterized query bug (discovered 2026-04-12)
+When comparing a UUID column against a parameterized string value (`${pathId}`), `@vercel/postgres` can silently return incomplete results. The fix is to cast the UUID column to text in the WHERE clause:
+
+```sql
+-- ✅ CORRECT — always cast UUID columns to text in parameterized WHERE clauses
+SELECT * FROM units WHERE path_id::text = ${pathId} ORDER BY order_index
+
+-- ❌ WRONG — may silently drop rows with @vercel/postgres parameterized queries
+SELECT * FROM units WHERE path_id = ${pathId} ORDER BY order_index
+```
+
+This applies to ALL tables with UUID primary/foreign keys when filtering via parameterized queries. When writing new API routes, always use `column::text = ${param}` for UUID comparisons.
+
+**Root cause**: `@vercel/postgres` sends parameterized values as TEXT. PostgreSQL's UUID-to-TEXT comparison can behave inconsistently depending on the query planner and index usage. Casting explicitly avoids the ambiguity.
+
+**Bug ticket**: PRs #12–#15 (2026-04-12). Took 4 PRs to fully diagnose and fix.
 
 ---
 
@@ -159,9 +193,11 @@ mathly/
 │   ├── anthropic/client.ts     # Anthropic SDK singleton + Euler system prompt
 │   ├── auth/config.ts          # NextAuth config (Credentials + Google, JWT callbacks)
 │   ├── db/
-│   │   ├── index.ts            # @vercel/postgres query helper
+│   │   ├── env.ts              # Maps DATABASE_URL → POSTGRES_URL (imported before @vercel/postgres)
+│   │   ├── index.ts            # Central DB export — ALL files must import sql from here
 │   │   ├── database.ts         # All DB functions (users, progress, hearts, etc.)
-│   │   └── schema.sql          # Full Neon/Postgres schema (run in SQL editor)
+│   │   ├── schema.sql          # Full Neon/Postgres schema (run in SQL editor)
+│   │   └── migrations/         # Incremental schema changes (run in Neon SQL editor)
 │   ├── sounds.ts               # Web Audio API synthesized sounds (no audio files)
 │   ├── stripe/client.ts        # Stripe singleton + PLANS pricing config
 │   └── types.ts                # TypeScript types, interfaces, level/XP formulas
@@ -256,7 +292,8 @@ Run the full SQL in the Neon SQL editor to initialize. Key tables:
 
 ## Environment Variables
 See `.env.local.example` for the complete list:
-- **Database**: `POSTGRES_URL` + related Neon/Vercel vars (auto-configured when linked in Vercel)
+- **Database**: `DATABASE_URL` (set automatically by Neon's Vercel integration — NOT `POSTGRES_URL`). The code maps `DATABASE_URL → POSTGRES_URL` via `lib/db/env.ts`. Also: `DATABASE_URL_UNPOOLED`, `PGDATABASE`, `POSTGRES_DATABASE`.
+- **Admin**: `ADMIN_EMAILS` — comma-separated list of emails allowed to access `/admin/*` and `/api/admin/*` routes
 - **Auth**: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - **Anthropic**: `ANTHROPIC_API_KEY`
 - **Stripe**: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, plus 4 price IDs
@@ -271,6 +308,8 @@ npm run lint     # ESLint
 ```
 
 ## Key Patterns
+- **All DB imports MUST come from `@/lib/db`**, never from `@vercel/postgres` directly (see Database Connection Rules above)
+- **UUID WHERE clauses MUST cast to text**: `WHERE id::text = ${param}` (see UUID bug above)
 - API routes use `auth()` from NextAuth for session checking
 - All DB operations go through `lib/db/database.ts` — no direct SQL in components
 - Client state managed via Zustand (`store/useStore.ts`), hydrated by `DataProvider`
