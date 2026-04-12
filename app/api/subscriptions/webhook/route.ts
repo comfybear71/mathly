@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db';
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, {
